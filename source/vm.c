@@ -85,11 +85,26 @@ array_t* array_alloc(uint32_t cap)
     return arr;
 }
 
+void array_set_length(array_t* array, uint32_t len)
+{
+    assert (len <= array->cap);
+
+    array->len = len;
+}
+
 void array_set(array_t* array, uint32_t idx, word_t val)
 {
-    assert (idx < array->len);
+    if (idx >= array->len)
+        array_set_length(array, idx+1);
 
     array->elems[idx] = val;
+}
+
+void array_set_ptr(array_t* array, uint32_t idx, heapptr_t val)
+{
+    word_t word;
+    word.heapptr = val;
+    array_set(array, idx, word);
 }
 
 word_t array_get(array_t* array, uint32_t idx)

@@ -90,6 +90,9 @@ heapptr_t vm_alloc(uint32_t size, desc_t desc);
 string_t* string_alloc(uint32_t len);
 
 array_t* array_alloc(uint32_t cap);
+void array_set(array_t* array, uint32_t idx, word_t val);
+void array_set_ptr(array_t* array, uint32_t idx, heapptr_t val);
+word_t array_get(array_t* array, uint32_t idx);
 
 #endif
 

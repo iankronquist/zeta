@@ -43,12 +43,50 @@ char input_read_ch(input_t* input)
     return ch;
 }
 
+/// Consume whitespace and comments
+void input_eat_ws(input_t* input)
+{
+    // Until the end of the whitespace
+    for (;;)
+    {
+        // Consume whitespace characters
+        if (isspace(input_peek_ch(input)))
+        {
+            input_read_ch(input);
+            continue;
+        }
+
+        /*
+        // If this is a single-line comment
+        if (input_match_str("//"))
+        {
+
+
+
+            continue;
+        }
+        */
+
+        // This isn't whitespace, stop
+        break;
+    }
+}
+
 /// Allocate an integer node
 ast_int_t* ast_int_alloc(int64_t val)
 {
     ast_int_t* node = (ast_int_t*)vm_alloc(sizeof(ast_int_t), DESC_AST_INT);
     node->val = val;
     return node;
+}
+
+/// Allocate a binary operator node
+void ast_binop_alloc()
+{
+    // TODO
+
+
+
 }
 
 /**
@@ -153,20 +191,40 @@ heapptr_t parseStr(input_t* input)
     return (heapptr_t)str;
 }
 
-// TODO: parseExprList
-// needed for call
-
 /**
-Parse a call expression
-ident(x y z ...)
+Parse a list of expressions
 */
-heapptr_t parseCall(input_t* input)
+heapptr_t parseExprList(input_t* input, char beginCh, char endCh)
 {
-    // TODO
+    // Check for the list start character
+    char ch = input_read_ch(input);
+    if (ch != beginCh)
+        return NULL;
 
+    // Allocate an array with an initial capacity
+    array_t* arr = array_alloc(4);
 
+    // Until the end of the list
+    for (;;)
+    {
+        // Read whitespace
+        input_eat_ws(input);
 
+        // Consume this character
+        char ch = input_peek_ch(input);
+        if (ch == endCh)
+        {
+            input_read_ch(input);
+            break;
+        }
 
+        // Parse an expression
+        heapptr_t expr = parseExpr(input);
+
+        array_set_ptr(arr, arr->len, expr);
+    }
+
+    return (heapptr_t)arr;
 }
 
 /**
@@ -177,11 +235,9 @@ heapptr_t parseAtom(input_t* input)
     printf("idx=%d\n", input->idx);
 
     // Consume whitespace
-    while (isspace(input_peek_ch(input)))
-        input_read_ch(input);
+    input_eat_ws(input);
 
     input_t sub;
-
     heapptr_t expr;
 
     // Try parsing an identifier
@@ -211,6 +267,15 @@ heapptr_t parseAtom(input_t* input)
         return expr;
     }
 
+    // Try parsing an array
+    sub = *input;
+    expr = parseExprList(&sub, '[', ']');
+    if (expr != NULL)
+    {
+        *input = sub;
+        return expr;
+    }
+
     // Parsing failed
     return NULL;
 }
@@ -221,6 +286,10 @@ Parse an expression
 heapptr_t parseExpr(input_t* input)
 {
     // TODO
+
+
+
+
 
 
 

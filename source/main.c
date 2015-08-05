@@ -44,10 +44,25 @@ int main(int argc, char** argv)
         input_t input = input_from_string(str);
 
         // Until the end of the input is reached
-        while (!input_eof(&input))
+        for (;;)
         {
+            // Consume whitespace
+            input_eat_ws(&input);
+
+            // If this is the end of the input, stop
+            if (input_eof(&input))
+                break;
+
             // Parse one expression
             heapptr_t expr = parseExpr(&input);
+
+            if (expr == NULL)
+            {
+                printf("parse failed at idx %d\n", input.idx);
+                printf("char: %c\n", input_peek_ch(&input));
+
+                return -1;
+            }
 
             // Evaluate the expression
             evalExpr(expr);
