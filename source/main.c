@@ -35,7 +35,13 @@ int main(int argc, char** argv)
         string_t* str = string_alloc(len);
 
         // Read into the allocated buffer
-        fread(str->data, 1, len, file);
+        int read = fread(str->data, 1, len, file);
+
+        if (read != len)
+        {
+            printf("failed to read file");
+            return -1;
+        }
 
         // Close the input file
         fclose(file);

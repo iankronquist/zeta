@@ -43,6 +43,47 @@ char input_read_ch(input_t* input)
     return ch;
 }
 
+/// Try and match a given character in the input
+/// The character is consumed if matched
+bool input_match_ch(input_t* input, char ch)
+{
+    if (input_peek_ch(input) == ch)
+    {
+        input_read_ch(input);
+        return true;
+    }
+
+    return false;
+}
+
+/// Try and match a given string in the input
+/// The string is consumed if matched
+bool input_match_str(input_t* input, char* str)
+{
+    input_t sub = *input;
+
+    for (;;)
+    {
+        if (*str == '\0')
+        {
+            *input = sub;
+            return true;
+        }
+
+        if (input_eof(&sub))
+        {
+            return false;
+        }
+
+        if (!input_match_ch(&sub, *str))
+        {
+            return false;
+        }
+
+        str++;
+    }
+}
+
 /// Consume whitespace and comments
 void input_eat_ws(input_t* input)
 {
@@ -56,12 +97,33 @@ void input_eat_ws(input_t* input)
             continue;
         }
 
-        /*
         // If this is a single-line comment
-        if (input_match_str("//"))
+        if (input_match_str(input, "//"))
         {
+            // Read until and end of line is reached
+            for (;;)
+            {
+                char ch = input_read_ch(input);
+                if (ch == '\n' || ch == '\0')
+                    break;
+            }
 
+            continue;
+        }
 
+        // If this is a multi-line comment
+        /*
+        if (input_match_str(input, "/*"))
+        {
+            // TODO: handle nested comments
+
+            // Read until and end of line is reached
+            for (;;)
+            {
+                char ch = input_read_ch(input);
+                if (ch == '\n' || ch == '\0')
+                    break;
+            }
 
             continue;
         }
