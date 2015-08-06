@@ -3,8 +3,16 @@ zeta
 
 This is an implementation of a Virtual Machine (VM) for the zeta programming language
 I'm working on in my spare time. The language is currently at the early prototype stage.
-It will be dynamically typed and feature a user-extensible grammar. Use of
-functional-style programming will be encouraged by the language, but not mandated.
+
+Planned features of the language include:
+
+- Dynamic typing
+
+- A user-extensible grammar, giving programmers the ability to define new syntactic constructs
+
+- No distinction between statements and expression, everything is an expression, as in LISP
+
+- Functional constructs such as map and foreach
 
 I've chosen to implement the VM core in pure C, for the following reasons:
 
