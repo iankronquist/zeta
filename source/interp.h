@@ -3,7 +3,7 @@
 
 #include "vm.h"
 
-word_t evalExpr(heapptr_t expr);
+word_t eval_expr(heapptr_t expr);
 
 #endif
 

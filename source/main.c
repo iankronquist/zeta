@@ -4,6 +4,7 @@
 #include <stdint.h>
 #include <stddef.h>
 #include <stdbool.h>
+#include <string.h>
 #include "vm.h"
 #include "parser.h"
 #include "interp.h"
@@ -11,6 +12,13 @@
 int main(int argc, char** argv)
 {
     vm_init();
+
+    // Test mode
+    if (argc == 2 && strcmp(argv[1], "--test") == 0)
+    {
+        test_parser();
+        return 0;
+    }
 
     if (argc == 2)
     {
@@ -60,7 +68,7 @@ int main(int argc, char** argv)
                 break;
 
             // Parse one expression
-            heapptr_t expr = parseExpr(&input);
+            heapptr_t expr = parse_expr(&input);
 
             if (expr == NULL)
             {
@@ -71,7 +79,7 @@ int main(int argc, char** argv)
             }
 
             // Evaluate the expression
-            evalExpr(expr);
+            eval_expr(expr);
         }
     }
 

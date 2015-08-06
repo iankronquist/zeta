@@ -95,7 +95,9 @@ bool input_eof(input_t* input);
 char input_peek_ch(input_t* input);
 void input_eat_ws(input_t* input);
 
-heapptr_t parseExpr(input_t* input);
+heapptr_t parse_expr(input_t* input);
+
+void test_parser();
 
 #endif
 

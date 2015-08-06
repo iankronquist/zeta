@@ -264,7 +264,7 @@ heapptr_t parseStr(input_t* input)
 /**
 Parse a list of expressions
 */
-heapptr_t parseExprList(input_t* input, char beginCh, char endCh)
+heapptr_t parse_expr_list(input_t* input, char beginCh, char endCh)
 {
     // Check for the list start character
     char ch = input_read_ch(input);
@@ -289,7 +289,7 @@ heapptr_t parseExprList(input_t* input, char beginCh, char endCh)
         }
 
         // Parse an expression
-        heapptr_t expr = parseExpr(input);
+        heapptr_t expr = parse_expr(input);
 
         array_set_ptr(arr, arr->len, expr);
     }
@@ -302,8 +302,6 @@ Parse an atomic expression
 */
 heapptr_t parseAtom(input_t* input)
 {
-    printf("idx=%d\n", input->idx);
-
     // Consume whitespace
     input_eat_ws(input);
 
@@ -339,7 +337,7 @@ heapptr_t parseAtom(input_t* input)
 
     // Try parsing an array
     sub = *input;
-    expr = parseExprList(&sub, '[', ']');
+    expr = parse_expr_list(&sub, '[', ']');
     if (expr != NULL)
     {
         *input = sub;
@@ -441,7 +439,7 @@ const opinfo_t* input_match_op(input_t* input)
 /**
 Parse an expression using the precedence climbing algorithm
 */
-heapptr_t parseExprPrec(input_t* input, int minPrec)
+heapptr_t parse_expr_prec(input_t* input, int minPrec)
 {
     // The first call has min precedence 0
     //
@@ -456,7 +454,7 @@ heapptr_t parseExprPrec(input_t* input, int minPrec)
     // If an operator has the mininum precedence or greater, it will
     // associate the current atom to its left and then parse the rhs
 
-    //writeln("parseExpr");
+    //writeln("parse_expr");
 
     // Parse the first atom
     heapptr_t lhsExpr = parseAtom(input);
@@ -486,11 +484,11 @@ heapptr_t parseExprPrec(input_t* input, int minPrec)
         // If this is a function call expression
         if (cur.stringVal == "(")
         {
-            // TODO: change parseExprList to not consume opening token,
+            // TODO: change parse_expr_list to not consume opening token,
             // since it's matched and consumed here
 
             // Parse the argument list and create the call expression
-            auto argExprs = parseExprList(input, "(", ")");
+            auto argExprs = parse_expr_list(input, "(", ")");
             lhsExpr = new CallExpr(lhsExpr, argExprs, lhsExpr.pos);
         }
         */
@@ -499,7 +497,7 @@ heapptr_t parseExprPrec(input_t* input, int minPrec)
         // If this is an array indexing expression
         else if (input.matchSep("["))
         {
-            auto indexExpr = parseExpr(input);
+            auto indexExpr = parse_expr(input);
             input.readSep("]");
             lhsExpr = new IndexExpr(lhsExpr, indexExpr, lhsExpr.pos);
         }
@@ -533,10 +531,18 @@ heapptr_t parseExprPrec(input_t* input, int minPrec)
         /*else*/ if (op->arity == 2)
         {
             // Recursively parse the rhs
-            heapptr_t rhsExpr = parseExprPrec(input, nextMinPrec);
+            heapptr_t rhsExpr = parse_expr_prec(input, nextMinPrec);
 
-            // Update lhs with the new value
-            lhsExpr = (heapptr_t)ast_binop_alloc(op, lhsExpr, rhsExpr/*, lhsExpr.pos*/);
+            // The rhs expression must parse correctly
+            if (rhsExpr == NULL)
+                return NULL;
+
+            // Create a new parent node for the expressions
+            lhsExpr = (heapptr_t)ast_binop_alloc(
+                op,
+                lhsExpr,
+                rhsExpr/*, lhsExpr.pos*/
+            );
         }
 
         /*
@@ -558,15 +564,58 @@ heapptr_t parseExprPrec(input_t* input, int minPrec)
         }
     }
 
-    //writeln("leaving parseExpr");
+    //writeln("leaving parse_expr");
 
     // Return the parsed expression
     return lhsExpr;
 }
 
 /// Parse an expression
-heapptr_t parseExpr(input_t* input)
+heapptr_t parse_expr(input_t* input)
 {
-    return parseExprPrec(input, 0);
+    return parse_expr_prec(input, 0);
+}
+
+/// Test that the parsing of an expression succeeds or fails
+void test_parse_expr(char* cstr, bool shouldParse)
+{
+    string_t* str = string_alloc(strlen(cstr));
+    strcpy(str->data, cstr);
+    input_t input = input_from_string(str);
+
+    heapptr_t expr = parse_expr(&input);
+
+    if (!expr && shouldParse)
+    {
+        printf("parsing failed for:\n\"%s\"\n", cstr);
+        exit(-1);
+    }
+
+    if (expr && !shouldParse)
+    {
+        printf("parsing did not fail for:\n\"%s\"\n", cstr);
+        exit(-1);
+    }
+}
+
+/// Test the functionality of the parser
+void test_parser()
+{
+    test_parse_expr("123", true);
+    test_parse_expr("foobar", true);
+    test_parse_expr("  foo_bar  ", true);
+    test_parse_expr("'abc'", true);
+    test_parse_expr("'hi' // comment", true);
+    test_parse_expr("'hi'", true);
+
+    test_parse_expr("[]", true);
+    test_parse_expr("[1]", true);
+    test_parse_expr("[1 a]", true);
+    test_parse_expr("[ 1\na ]", true);
+    test_parse_expr("[ 1//comment\na ]", true);
+
+    test_parse_expr("a + b", true);
+    test_parse_expr("a + b - c", true);
+    test_parse_expr("a +", false);
 }
 
