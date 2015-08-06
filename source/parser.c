@@ -143,12 +143,20 @@ ast_int_t* ast_int_alloc(int64_t val)
 }
 
 /// Allocate a binary operator node
-void ast_binop_alloc()
+ast_binop_t* ast_binop_alloc(
+    const opinfo_t* op,
+    heapptr_t left,
+    heapptr_t right
+)
 {
-    // TODO
-
-
-
+    ast_binop_t* node = (ast_binop_t*)vm_alloc(
+        sizeof(ast_binop_t),
+        DESC_AST_BINOP
+    );
+    node->op = op;
+    node->left = left;
+    node->right = right;
+    return node;
 }
 
 /**
@@ -342,22 +350,223 @@ heapptr_t parseAtom(input_t* input)
     return NULL;
 }
 
-/**
-Parse an expression
+/// Operator definitions
+const opinfo_t OP_ADD = { "+", NULL, 2, 11, 'l', false };
+const opinfo_t OP_SUB = { "-", NULL, 2, 11, 'l', false };
+
+// Maximum operator precedence
+//const int MAX_PREC = 16;
+
+/*
+OpInfo[] operators = [
+
+    // Member operator
+    { "."w, 2, 16, 'l' },
+
+    // TODO: end str
+    // Array indexing
+    { "["w, 1, 16, 'l' },
+
+    // TODO: end str
+    // Function call
+    { "("w, 1, 15, 'l' },
+
+    // Prefix unary operators
+    { "+"w , 1, 13, 'r' },
+    { "-"w , 1, 13, 'r' },
+    { "not"w , 1, 13, 'r' },
+
+    // Multiplication/division/modulus
+    { "*"w, 2, 12, 'l' },
+    { "/"w, 2, 12, 'l', true },
+    { "%"w, 2, 12, 'l', true },
+
+    // Addition/subtraction
+    { "+"w, 2, 11, 'l' },
+    { "-"w, 2, 11, 'l', true },
+
+    // Relational operators
+    { "<"w         , 2, IN_PREC, 'l' },
+    { "<="w        , 2, IN_PREC, 'l' },
+    { ">"w         , 2, IN_PREC, 'l' },
+    { ">="w        , 2, IN_PREC, 'l' },
+    { "in"w        , 2, IN_PREC, 'l' },
+    { "instanceof"w, 2, IN_PREC, 'l' },
+
+    // Equality comparison
+    { "=="w , 2, 8, 'l' },
+    { "!="w , 2, 8, 'l' },
+    { "==="w, 2, 8, 'l' },
+    { "!=="w, 2, 8, 'l' },
+
+    // Bitwise operators
+    { "&"w, 2, 7, 'l' },
+    { "^"w, 2, 6, 'l' },
+    { "|"w, 2, 5, 'l' },
+
+    // Logical operators
+    { "and"w, 2, 4, 'l' },
+    { "or"w, 2, 3, 'l' },
+
+    // Assignment
+    { "="w   , 2, 1, 'r' },
+];
 */
+
+/**
+Try to match an operator in the input
+*/
+const opinfo_t* input_match_op(input_t* input)
+{
+    char ch = input_peek_ch(input);
+
+    // Switch on the character
+    switch (ch)
+    {
+        case '+':
+        if (input_match_str(input, "+"))
+            return &OP_ADD;
+        break;
+
+        case '-':
+        if (input_match_str(input, "-"))
+            return &OP_SUB;
+        break;
+    }
+
+    // No match found
+    return NULL;
+}
+
+/**
+Parse an expression using the precedence climbing algorithm
+*/
+heapptr_t parseExprPrec(input_t* input, int minPrec)
+{
+    // The first call has min precedence 0
+    //
+    // Each call loops to grab everything of the current precedence or
+    // greater and builds a left-sided subtree out of it, associating
+    // operators to their left operand
+    //
+    // If an operator has less than the current precedence, the loop
+    // breaks, returning us to the previous loop level, this will attach
+    // the atom to the previous operator (on the right)
+    //
+    // If an operator has the mininum precedence or greater, it will
+    // associate the current atom to its left and then parse the rhs
+
+    //writeln("parseExpr");
+
+    // Parse the first atom
+    heapptr_t lhsExpr = parseAtom(input);
+
+    for (;;)
+    {
+        // Consume whitespace
+        input_eat_ws(input);
+
+        // Attempt to match an operator in the input
+        const opinfo_t* op = input_match_op(input);
+
+        // If no operator matches, break out
+        if (op == NULL)
+            break;
+
+        // If the new operator has lower precedence, break out
+        if (op->prec < minPrec)
+            break;
+
+        //writefln("binary op: %s", cur.stringVal);
+
+        // Compute the minimal precedence for the recursive call (if any)
+        int nextMinPrec = (op->assoc == 'l')? (op->prec + 1):op->prec;
+
+        /*
+        // If this is a function call expression
+        if (cur.stringVal == "(")
+        {
+            // TODO: change parseExprList to not consume opening token,
+            // since it's matched and consumed here
+
+            // Parse the argument list and create the call expression
+            auto argExprs = parseExprList(input, "(", ")");
+            lhsExpr = new CallExpr(lhsExpr, argExprs, lhsExpr.pos);
+        }
+        */
+
+        /*
+        // If this is an array indexing expression
+        else if (input.matchSep("["))
+        {
+            auto indexExpr = parseExpr(input);
+            input.readSep("]");
+            lhsExpr = new IndexExpr(lhsExpr, indexExpr, lhsExpr.pos);
+        }
+        */
+
+        /*
+        // If this is a member expression
+        else if (op.str == ".")
+        {
+            input.read();
+
+            // Parse the identifier string
+            auto tok = input.read();
+            if (!(tok.type is Token.IDENT) &&
+                !(tok.type is Token.KEYWORD) &&
+                !(tok.type is Token.OP && ident(tok.stringVal)))
+            {
+                throw new ParseError(
+                    "invalid member identifier \"" ~ tok.toString() ~ "\"", 
+                    tok.pos
+                );
+            }
+            auto stringExpr = new StringExpr(tok.stringVal, tok.pos);
+
+            // Produce an indexing expression
+            lhsExpr = new IndexExpr(lhsExpr, stringExpr, lhsExpr.pos);
+        }
+        */
+
+        // If this is a binary operator
+        /*else*/ if (op->arity == 2)
+        {
+            // Recursively parse the rhs
+            heapptr_t rhsExpr = parseExprPrec(input, nextMinPrec);
+
+            // Update lhs with the new value
+            lhsExpr = (heapptr_t)ast_binop_alloc(op, lhsExpr, rhsExpr/*, lhsExpr.pos*/);
+        }
+
+        /*
+        // If this is a unary operator
+        else if (op.arity == 1)
+        {
+            // Consume the current token
+            input.read();
+
+            // Update lhs with the new value
+            lhsExpr = new UnOpExpr(op, lhsExpr, lhsExpr.pos);
+        }
+        */
+
+        else
+        {
+            // Unhandled operator
+            assert (false);
+        }
+    }
+
+    //writeln("leaving parseExpr");
+
+    // Return the parsed expression
+    return lhsExpr;
+}
+
+/// Parse an expression
 heapptr_t parseExpr(input_t* input)
 {
-    // TODO
-
-
-
-
-
-
-
-    return parseAtom(input);
-
-
-
+    return parseExprPrec(input, 0);
 }
 

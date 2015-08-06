@@ -13,6 +13,7 @@ typedef uint64_t desc_t;
 #define DESC_STRING     1
 #define DESC_ARRAY      2
 #define DESC_AST_INT    3
+#define DESC_AST_BINOP  4
 
 /// Initial VM heap size
 #define HEAP_SIZE (1 << 24)

@@ -30,6 +30,48 @@ typedef struct
 
 } ast_int_t;
 
+/**
+Operator information structure
+*/
+typedef struct
+{
+    /// String representation
+    char* str;
+
+    /// End string (optional)
+    char* endStr;
+
+    /// Operator arity
+    int arity;
+
+    /// Precedence level
+    int prec;
+
+    /// Associativity, left-to-right or right-to-left ('l' or 'r')
+    char assoc;
+
+    /// Non-associative flag (e.g.: - and / are not associative)
+    bool nonassoc;
+
+} opinfo_t;
+
+// Operator definitions
+const opinfo_t OP_ADD;
+
+/**
+Binary operator AST node
+*/
+typedef struct
+{
+    desc_t desc;
+
+    const opinfo_t* op;
+
+    heapptr_t left;
+    heapptr_t right;
+
+} ast_binop_t;
+
 // TODO: function call node
 // save until string and function parsing works
 
