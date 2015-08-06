@@ -10,10 +10,14 @@ typedef uint8_t* heapptr_t;
 /// Heap object descriptor/header
 typedef uint64_t desc_t;
 
+/// Heap object descriptors
 #define DESC_STRING     1
 #define DESC_ARRAY      2
 #define DESC_AST_INT    3
 #define DESC_AST_BINOP  4
+#define DESC_AST_UNOP   5
+#define DESC_AST_IF     6
+#define DESC_AST_CALL   7
 
 /// Initial VM heap size
 #define HEAP_SIZE (1 << 24)

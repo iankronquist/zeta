@@ -35,11 +35,11 @@ Operator information structure
 */
 typedef struct
 {
-    /// String representation
+    /// Operator string (e.g. "+")
     char* str;
 
-    /// End string (optional)
-    char* endStr;
+    /// Closing string (optional)
+    char* close_str;
 
     /// Operator arity
     int arity;
@@ -72,8 +72,34 @@ typedef struct
 
 } ast_binop_t;
 
-// TODO: function call node
-// save until string and function parsing works
+/**
+If expression AST node
+*/
+typedef struct
+{
+    desc_t desc;
+
+    heapptr_t test_expr;
+
+    heapptr_t then_expr;
+    heapptr_t else_expr;
+
+} ast_if_t;
+
+/**
+Function call AST node
+*/
+typedef struct
+{
+    desc_t desc;
+
+    /// Function to be called
+    heapptr_t fun_expr;
+
+    /// Argument expressions
+    heapptr_t arg_exprs;
+
+} ast_call_t;
 
 /**
 Function expression node

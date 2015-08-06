@@ -135,15 +135,15 @@ void input_eat_ws(input_t* input)
 }
 
 /// Allocate an integer node
-ast_int_t* ast_int_alloc(int64_t val)
+heapptr_t ast_int_alloc(int64_t val)
 {
     ast_int_t* node = (ast_int_t*)vm_alloc(sizeof(ast_int_t), DESC_AST_INT);
     node->val = val;
-    return node;
+    return (heapptr_t)node;
 }
 
 /// Allocate a binary operator node
-ast_binop_t* ast_binop_alloc(
+heapptr_t ast_binop_alloc(
     const opinfo_t* op,
     heapptr_t left,
     heapptr_t right
@@ -156,7 +156,22 @@ ast_binop_t* ast_binop_alloc(
     node->op = op;
     node->left = left;
     node->right = right;
-    return node;
+    return (heapptr_t)node;
+}
+
+/// Allocate a function call node
+heapptr_t ast_call_alloc(
+    heapptr_t fun_expr,
+    heapptr_t arg_exprs
+)
+{
+    ast_call_t* node = (ast_call_t*)vm_alloc(
+        sizeof(ast_call_t),
+        DESC_AST_CALL
+    );
+    node->fun_expr = fun_expr;
+    node->arg_exprs = arg_exprs;
+    return (heapptr_t)node;
 }
 
 /**
@@ -270,7 +285,7 @@ heapptr_t parse_expr_list(input_t* input, char endCh)
         // Read whitespace
         input_eat_ws(input);
 
-        // Consume this character
+        // If this is the end of the list
         char ch = input_peek_ch(input);
         if (ch == endCh)
         {
@@ -280,6 +295,12 @@ heapptr_t parse_expr_list(input_t* input, char endCh)
 
         // Parse an expression
         heapptr_t expr = parse_expr(input);
+
+        // The expression must not fail to parse
+        if (expr == NULL)
+        {
+            return NULL;
+        }
 
         array_set_ptr(arr, arr->len, expr);
     }
@@ -297,7 +318,15 @@ heapptr_t parseAtom(input_t* input)
 
     // Identifier
     if (isalnum(input_peek_ch(input)))
+    {
+        /*
+        // TODO:
+        // if expression
+        if (input_match_str(input, "if"))
+        */
+
         return parse_ident(input);
+    }
 
     // Integer constant
     if (isdigit(input_peek_ch(input)))
@@ -324,23 +353,18 @@ heapptr_t parseAtom(input_t* input)
     return NULL;
 }
 
-/*
 // Member operator
-{ "."w, 2, 16, 'l' },
+//{ "."w, 2, 16, 'l' },
 
 // Array indexing
-{ '[', ']' 1, 16, 'l' },
-*/
+const opinfo_t OP_IDX = { "[", "]", 2, 16, 'l', false };
 
-// Function call
+// Function call, variable arity
 const opinfo_t OP_CALL = { "(", ")", -1, 15, 'l', false };
 
-/*
 // Prefix unary operators
-{ "+"w , 1, 13, 'r' },
-{ "-"w , 1, 13, 'r' },
-{ "not"w , 1, 13, 'r' },
-*/
+const opinfo_t OP_NEG = { "-", NULL, 1, 13, 'r', false };
+const opinfo_t OP_NOT = { "NOT", NULL, 1, 13, 'r', false };
 
 // Binary arithmetic operators
 const opinfo_t OP_MUL = { "*", NULL, 2, 12, 'l', false };
@@ -356,14 +380,13 @@ const opinfo_t OP_SUB = { "-", NULL, 2, 11, 'l', false };
 { ">"w         , 2, IN_PREC, 'l' },
 { ">="w        , 2, IN_PREC, 'l' },
 { "in"w        , 2, IN_PREC, 'l' },
-{ "instanceof"w, 2, IN_PREC, 'l' },
+*/
 
 // Equality comparison
-{ "=="w , 2, 8, 'l' },
-{ "!="w , 2, 8, 'l' },
-{ "==="w, 2, 8, 'l' },
-{ "!=="w, 2, 8, 'l' },
+const opinfo_t OP_EQ = { "==", NULL, 2, 8, 'l', false };
+const opinfo_t OP_NE = { "!=", NULL, 2, 8, 'l', false };
 
+/*
 // Bitwise operators
 { "&"w, 2, 7, 'l' },
 { "^"w, 2, 6, 'l' },
@@ -373,9 +396,6 @@ const opinfo_t OP_SUB = { "-", NULL, 2, 11, 'l', false };
 // Logical operators
 const opinfo_t OP_AND = { "and", NULL, 2, 4, 'l', false };
 const opinfo_t OP_OR = { "or", NULL, 2, 3, 'l', false };
-
-// Maximum operator precedence
-//const int MAX_PREC = 16;
 
 /**
 Try to match an operator in the input
@@ -388,26 +408,59 @@ const opinfo_t* input_match_op(input_t* input, int minPrec)
 
     const opinfo_t* op = NULL;
 
-    // Switch on the character
+    // Switch on the first character of the operator
+    // We do this to avoid a long cascade of match tests
     switch (ch)
     {
+        case '[':
+        if (input_match_ch(input, '['))     op = &OP_IDX;
+        break;
+
+        case '(':
+        if (input_match_ch(input, '('))     op = &OP_CALL;
+        break;
+
         case '*':
-        if (input_match_str(input, "*"))    op = &OP_MUL;
+        if (input_match_ch(input, '*'))     op = &OP_MUL;
+        break;
+
+        case '/':
+        if (input_match_ch(input, '/'))     op = &OP_DIV;
+        break;
+
+        case '%':
+        if (input_match_ch(input, '%'))     op = &OP_MOD;
         break;
 
         case '+':
-        if (input_match_str(input, "+"))    op = &OP_ADD;
+        if (input_match_ch(input, '+'))     op = &OP_ADD;
         break;
 
         case '-':
-        if (input_match_str(input, "-"))    op = &OP_SUB;
+        if (input_match_ch(input, '-'))     op = &OP_SUB;
+        break;
+
+        case '=':
+        if (input_match_str(input, "=="))   op = &OP_EQ;
+        break;
+
+        case '!':
+        if (input_match_str(input, "!="))   op = &OP_NE;
+        break;
+
+        case 'a':
+        if (input_match_str(input, "and"))  op = &OP_AND;
+        break;
+
+        case 'o':
+        if (input_match_str(input, "or"))   op = &OP_OR;
         break;
     }
 
     // If any operator was found but its precedence isn't high enough
     if (op && op->prec < minPrec)
     {
-        // Backtrack
+        // Backtrack to avoid consuming the operator
         *input = beforeOp;
         op = NULL;
     }
@@ -434,8 +487,6 @@ heapptr_t parse_expr_prec(input_t* input, int minPrec)
     // If an operator has the mininum precedence or greater, it will
     // associate the current atom to its left and then parse the rhs
 
-    //writeln("parse_expr");
-
     // Parse the first atom
     heapptr_t lhsExpr = parseAtom(input);
 
@@ -458,7 +509,18 @@ heapptr_t parse_expr_prec(input_t* input, int minPrec)
         //printf("op->prec=%d, minPrec=%d\n", op->prec, minPrec);
 
         // Compute the minimal precedence for the recursive call (if any)
-        int nextMinPrec = (op->assoc == 'l')? (op->prec + 1):op->prec;
+        int nextMinPrec;
+        if (op->assoc == 'l')
+        {
+            if (op->close_str)
+                nextMinPrec = 0;
+            else
+                nextMinPrec = (op->prec + 1);
+        }
+        else
+        {
+            nextMinPrec = op->prec;
+        }
 
         // If this is a function call expression
         if (op == &OP_CALL)
@@ -466,19 +528,8 @@ heapptr_t parse_expr_prec(input_t* input, int minPrec)
             // Parse the argument list and create the call expression
             heapptr_t argExprs = parse_expr_list(input, ')');
 
-            // TODO
-            //lhsExpr = new CallExpr(lhsExpr, argExprs, lhsExpr.pos);
+            lhsExpr = ast_call_alloc(lhsExpr, argExprs);
         }
-
-        /*
-        // If this is an array indexing expression
-        else if (input.matchSep("["))
-        {
-            auto indexExpr = parse_expr(input);
-            input.readSep("]");
-            lhsExpr = new IndexExpr(lhsExpr, indexExpr, lhsExpr.pos);
-        }
-        */
 
         /*
         // If this is a member expression
@@ -505,7 +556,7 @@ heapptr_t parse_expr_prec(input_t* input, int minPrec)
         */
 
         // If this is a binary operator
-        /*else*/ if (op->arity == 2)
+        else if (op->arity == 2)
         {
             // Recursively parse the rhs
             heapptr_t rhsExpr = parse_expr_prec(input, nextMinPrec);
@@ -515,11 +566,15 @@ heapptr_t parse_expr_prec(input_t* input, int minPrec)
                 return NULL;
 
             // Create a new parent node for the expressions
-            lhsExpr = (heapptr_t)ast_binop_alloc(
+            lhsExpr = ast_binop_alloc(
                 op,
                 lhsExpr,
                 rhsExpr/*, lhsExpr.pos*/
             );
+
+            // If specified, match the operator closing string
+            if (op->close_str && !input_match_str(input, op->close_str))
+                return NULL;
         }
 
         /*
@@ -540,8 +595,6 @@ heapptr_t parse_expr_prec(input_t* input, int minPrec)
             assert (false);
         }
     }
-
-    //writeln("leaving parse_expr");
 
     // Return the parsed expression
     return lhsExpr;
@@ -611,14 +664,42 @@ void test_parser()
     test_parse_expr("[ 1\na ]", true);
     test_parse_expr("[ 1//comment\na ]", true);
 
+    // Arithmetic expressions
     test_parse_expr("a + b", true);
     test_parse_expr("a + b + c", true);
     test_parse_expr("a + b - c", true);
     test_parse_expr("a + b * c + d", true);
+    test_parse_expr("a or b or c", true);
 
-    // Malformed expressions
+    // Malformed arithmetic expressions
     test_parse_expr("a # b", false);
     test_parse_expr("a +", false);
     test_parse_expr("a + b # c", false);
+
+    // Array indexing
+    test_parse_expr("a[0]", true);
+    test_parse_expr("a[b]", true);
+    test_parse_expr("a[b+2]", true);
+    test_parse_expr("a[2*b+1]", true);
+    test_parse_expr("a[]", false);
+    test_parse_expr("a[0 1]", false);
+
+    // If expression
+    // TODO
+
+
+
+
+
+
+
+    // Call expressions
+    test_parse_expr("a()", true);
+    test_parse_expr("a(b)", true);
+    test_parse_expr("a(b c)", true);
+    test_parse_expr("a(b c+1)", true);
+    test_parse_expr("a(b,c+1)", false);
+    test_parse_expr("x + a(b c+1)", true);
+    test_parse_expr("x + a(b c+1) + y", true);
 }
 
