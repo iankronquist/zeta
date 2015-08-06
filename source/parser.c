@@ -162,7 +162,7 @@ ast_binop_t* ast_binop_alloc(
 /**
 Parse an identifier
 */
-heapptr_t parseIdent(input_t* input)
+heapptr_t parse_ident(input_t* input)
 {
     size_t startIdx = input->idx;
     size_t len = 0;
@@ -193,7 +193,7 @@ heapptr_t parseIdent(input_t* input)
 /**
 Parse an integer value
 */
-heapptr_t parseInt(input_t* input)
+heapptr_t parse_int(input_t* input)
 {
     size_t numDigits = 0;
     int64_t intVal = 0;
@@ -221,13 +221,8 @@ heapptr_t parseInt(input_t* input)
 /**
 Parse a string value
 */
-heapptr_t parseStr(input_t* input)
+heapptr_t parse_str(input_t* input)
 {
-    // Strings should begin with a single quote
-    char ch = input_read_ch(input);
-    if (ch != '\'')
-        return NULL;
-
     size_t len = 0;
     size_t cap = 64;
 
@@ -264,13 +259,8 @@ heapptr_t parseStr(input_t* input)
 /**
 Parse a list of expressions
 */
-heapptr_t parse_expr_list(input_t* input, char beginCh, char endCh)
+heapptr_t parse_expr_list(input_t* input, char endCh)
 {
-    // Check for the list start character
-    char ch = input_read_ch(input);
-    if (ch != beginCh)
-        return NULL;
-
     // Allocate an array with an initial capacity
     array_t* arr = array_alloc(4);
 
@@ -305,135 +295,125 @@ heapptr_t parseAtom(input_t* input)
     // Consume whitespace
     input_eat_ws(input);
 
-    input_t sub;
-    heapptr_t expr;
+    // Identifier
+    if (isalnum(input_peek_ch(input)))
+        return parse_ident(input);
 
-    // Try parsing an identifier
-    sub = *input;
-    expr = parseIdent(&sub);
-    if (expr != NULL)
-    {
-        *input = sub;
-        return expr;
-    }
+    // Integer constant
+    if (isdigit(input_peek_ch(input)))
+        return parse_int(input);
 
-    // Try parsing an integer
-    sub = *input;
-    expr = parseInt(&sub);
-    if (expr != NULL)
-    {
-        *input = sub;
-        return expr;
-    }
+    // String literal
+    if (input_match_ch(input, '\''))
+        return parse_str(input);
 
-    // Try parsing a string
-    sub = *input;
-    expr = parseStr(&sub);
-    if (expr != NULL)
-    {
-        *input = sub;
-        return expr;
-    }
+    // Array literal
+    if (input_match_ch(input, '['))
+        return parse_expr_list(input, ']');
 
-    // Try parsing an array
-    sub = *input;
-    expr = parse_expr_list(&sub, '[', ']');
-    if (expr != NULL)
-    {
-        *input = sub;
-        return expr;
-    }
+    // skip for now, no type tags, don't want true/false AST nodes
+    // true and false boolean constants
+    if (input_match_str(input, "true"))
+        assert (false);
+    if (input_match_str(input, "false"))
+        assert (false);
+
+    // TODO: parenthesized expression
 
     // Parsing failed
     return NULL;
 }
 
-/// Operator definitions
+/*
+// Member operator
+{ "."w, 2, 16, 'l' },
+
+// Array indexing
+{ '[', ']' 1, 16, 'l' },
+*/
+
+// Function call
+const opinfo_t OP_CALL = { "(", ")", -1, 15, 'l', false };
+
+/*
+// Prefix unary operators
+{ "+"w , 1, 13, 'r' },
+{ "-"w , 1, 13, 'r' },
+{ "not"w , 1, 13, 'r' },
+*/
+
+// Binary arithmetic operators
+const opinfo_t OP_MUL = { "*", NULL, 2, 12, 'l', false };
+const opinfo_t OP_DIV = { "/", NULL, 2, 12, 'l', false };
+const opinfo_t OP_MOD = { "%", NULL, 2, 12, 'l', false };
 const opinfo_t OP_ADD = { "+", NULL, 2, 11, 'l', false };
 const opinfo_t OP_SUB = { "-", NULL, 2, 11, 'l', false };
+
+// Relational operators
+/*
+{ "<"w         , 2, IN_PREC, 'l' },
+{ "<="w        , 2, IN_PREC, 'l' },
+{ ">"w         , 2, IN_PREC, 'l' },
+{ ">="w        , 2, IN_PREC, 'l' },
+{ "in"w        , 2, IN_PREC, 'l' },
+{ "instanceof"w, 2, IN_PREC, 'l' },
+
+// Equality comparison
+{ "=="w , 2, 8, 'l' },
+{ "!="w , 2, 8, 'l' },
+{ "==="w, 2, 8, 'l' },
+{ "!=="w, 2, 8, 'l' },
+
+// Bitwise operators
+{ "&"w, 2, 7, 'l' },
+{ "^"w, 2, 6, 'l' },
+{ "|"w, 2, 5, 'l' },
+*/
+
+// Logical operators
+const opinfo_t OP_AND = { "and", NULL, 2, 4, 'l', false };
+const opinfo_t OP_OR = { "or", NULL, 2, 3, 'l', false };
 
 // Maximum operator precedence
 //const int MAX_PREC = 16;
 
-/*
-OpInfo[] operators = [
-
-    // Member operator
-    { "."w, 2, 16, 'l' },
-
-    // TODO: end str
-    // Array indexing
-    { "["w, 1, 16, 'l' },
-
-    // TODO: end str
-    // Function call
-    { "("w, 1, 15, 'l' },
-
-    // Prefix unary operators
-    { "+"w , 1, 13, 'r' },
-    { "-"w , 1, 13, 'r' },
-    { "not"w , 1, 13, 'r' },
-
-    // Multiplication/division/modulus
-    { "*"w, 2, 12, 'l' },
-    { "/"w, 2, 12, 'l', true },
-    { "%"w, 2, 12, 'l', true },
-
-    // Addition/subtraction
-    { "+"w, 2, 11, 'l' },
-    { "-"w, 2, 11, 'l', true },
-
-    // Relational operators
-    { "<"w         , 2, IN_PREC, 'l' },
-    { "<="w        , 2, IN_PREC, 'l' },
-    { ">"w         , 2, IN_PREC, 'l' },
-    { ">="w        , 2, IN_PREC, 'l' },
-    { "in"w        , 2, IN_PREC, 'l' },
-    { "instanceof"w, 2, IN_PREC, 'l' },
-
-    // Equality comparison
-    { "=="w , 2, 8, 'l' },
-    { "!="w , 2, 8, 'l' },
-    { "==="w, 2, 8, 'l' },
-    { "!=="w, 2, 8, 'l' },
-
-    // Bitwise operators
-    { "&"w, 2, 7, 'l' },
-    { "^"w, 2, 6, 'l' },
-    { "|"w, 2, 5, 'l' },
-
-    // Logical operators
-    { "and"w, 2, 4, 'l' },
-    { "or"w, 2, 3, 'l' },
-
-    // Assignment
-    { "="w   , 2, 1, 'r' },
-];
-*/
-
 /**
 Try to match an operator in the input
 */
-const opinfo_t* input_match_op(input_t* input)
+const opinfo_t* input_match_op(input_t* input, int minPrec)
 {
+    input_t beforeOp = *input;
+
     char ch = input_peek_ch(input);
+
+    const opinfo_t* op = NULL;
 
     // Switch on the character
     switch (ch)
     {
+        case '*':
+        if (input_match_str(input, "*"))    op = &OP_MUL;
+        break;
+
         case '+':
-        if (input_match_str(input, "+"))
-            return &OP_ADD;
+        if (input_match_str(input, "+"))    op = &OP_ADD;
         break;
 
         case '-':
-        if (input_match_str(input, "-"))
-            return &OP_SUB;
+        if (input_match_str(input, "-"))    op = &OP_SUB;
         break;
     }
 
-    // No match found
-    return NULL;
+    // If any operator was found but its precedence isn't high enough
+    if (op && op->prec < minPrec)
+    {
+        // Backtrack
+        *input = beforeOp;
+        op = NULL;
+    }
+
+    // Return the matched operator, if any
+    return op;
 }
 
 /**
@@ -464,34 +444,31 @@ heapptr_t parse_expr_prec(input_t* input, int minPrec)
         // Consume whitespace
         input_eat_ws(input);
 
+        //printf("looking for op, minPrec=%d\n", minPrec);
+
         // Attempt to match an operator in the input
-        const opinfo_t* op = input_match_op(input);
+        // with sufficient precedence
+        const opinfo_t* op = input_match_op(input, minPrec);
 
         // If no operator matches, break out
         if (op == NULL)
             break;
 
-        // If the new operator has lower precedence, break out
-        if (op->prec < minPrec)
-            break;
-
-        //writefln("binary op: %s", cur.stringVal);
+        //printf("found op: %s\n", op->str);
+        //printf("op->prec=%d, minPrec=%d\n", op->prec, minPrec);
 
         // Compute the minimal precedence for the recursive call (if any)
         int nextMinPrec = (op->assoc == 'l')? (op->prec + 1):op->prec;
 
-        /*
         // If this is a function call expression
-        if (cur.stringVal == "(")
+        if (op == &OP_CALL)
         {
-            // TODO: change parse_expr_list to not consume opening token,
-            // since it's matched and consumed here
-
             // Parse the argument list and create the call expression
-            auto argExprs = parse_expr_list(input, "(", ")");
-            lhsExpr = new CallExpr(lhsExpr, argExprs, lhsExpr.pos);
+            heapptr_t argExprs = parse_expr_list(input, ')');
+
+            // TODO
+            //lhsExpr = new CallExpr(lhsExpr, argExprs, lhsExpr.pos);
         }
-        */
 
         /*
         // If this is an array indexing expression
@@ -579,22 +556,42 @@ heapptr_t parse_expr(input_t* input)
 /// Test that the parsing of an expression succeeds or fails
 void test_parse_expr(char* cstr, bool shouldParse)
 {
+    //printf("testing parse of %s\n", cstr);
+
     string_t* str = string_alloc(strlen(cstr));
     strcpy(str->data, cstr);
     input_t input = input_from_string(str);
 
     heapptr_t expr = parse_expr(&input);
 
-    if (!expr && shouldParse)
-    {
-        printf("parsing failed for:\n\"%s\"\n", cstr);
-        exit(-1);
-    }
+    // Consume any remaining whitespace
+    input_eat_ws(&input);
 
-    if (expr && !shouldParse)
+    if (shouldParse)
     {
-        printf("parsing did not fail for:\n\"%s\"\n", cstr);
-        exit(-1);
+        if (!expr)
+        {
+            printf("failed to produce an expression from:\n\"%s\"\n", cstr);
+            exit(-1);
+        }
+
+        if (!input_eof(&input))
+        {
+            printf(
+                "unconsumed input:\n\"%s\"\nremains for:\n\"%s\"\n",
+                &cstr[input.idx],
+                cstr
+            );
+            exit(-1);
+        }
+    }
+    else 
+    {
+        if (!shouldParse && expr && input_eof(&input))
+        {
+            printf("parsing did not fail for:\n\"%s\"\n", cstr);
+            exit(-1);
+        }
     }
 }
 
@@ -615,7 +612,13 @@ void test_parser()
     test_parse_expr("[ 1//comment\na ]", true);
 
     test_parse_expr("a + b", true);
+    test_parse_expr("a + b + c", true);
     test_parse_expr("a + b - c", true);
+    test_parse_expr("a + b * c + d", true);
+
+    // Malformed expressions
+    test_parse_expr("a # b", false);
     test_parse_expr("a +", false);
+    test_parse_expr("a + b # c", false);
 }
 
