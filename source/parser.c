@@ -159,6 +159,23 @@ heapptr_t ast_binop_alloc(
     return (heapptr_t)node;
 }
 
+/// Allocate an if expression node
+heapptr_t ast_if_alloc(
+    heapptr_t test_expr,
+    heapptr_t then_expr,
+    heapptr_t else_expr
+)
+{
+    ast_if_t* node = (ast_if_t*)vm_alloc(
+        sizeof(ast_if_t),
+        DESC_AST_IF
+    );
+    node->test_expr = test_expr;
+    node->then_expr = then_expr;
+    node->else_expr = else_expr;
+    return (heapptr_t)node;
+}
+
 /// Allocate a function call node
 heapptr_t ast_call_alloc(
     heapptr_t fun_expr,
@@ -272,6 +289,29 @@ heapptr_t parse_str(input_t* input)
 }
 
 /**
+Parse an if expression
+if <test_expr> then <then_expr> else <else_expr>
+*/
+heapptr_t parse_if_expr(input_t* input)
+{
+    heapptr_t test_expr = parse_expr(input);
+
+    input_eat_ws(input);
+    if (!input_match_str(input, "then"))
+        return NULL;
+
+    heapptr_t then_expr = parse_expr(input);
+
+    input_eat_ws(input);
+    if (!input_match_str(input, "else"))
+        return NULL;
+
+    heapptr_t else_expr = parse_expr(input);
+
+    return ast_if_alloc(test_expr, then_expr, else_expr);
+}
+
+/**
 Parse a list of expressions
 */
 heapptr_t parse_expr_list(input_t* input, char endCh)
@@ -319,11 +359,9 @@ heapptr_t parseAtom(input_t* input)
     // Identifier
     if (isalnum(input_peek_ch(input)))
     {
-        /*
-        // TODO:
         // if expression
         if (input_match_str(input, "if"))
-        */
+            return parse_if_expr(input);
 
         return parse_ident(input);
     }
@@ -685,13 +723,11 @@ void test_parser()
     test_parse_expr("a[0 1]", false);
 
     // If expression
-    // TODO
-
-
-
-
-
-
+    test_parse_expr("if x then y else z", true);
+    test_parse_expr("if x then a+c else d", true);
+    test_parse_expr("if x then a else b", true);
+    test_parse_expr("if x == 1 then y+z else z+d", true);
+    test_parse_expr("if x then a b", false);
 
     // Call expressions
     test_parse_expr("a()", true);

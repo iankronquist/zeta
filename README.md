@@ -2,7 +2,7 @@ zeta
 ====
 
 This is an implementation of a Virtual Machine (VM) for the zeta programming language
-I'm working on in my space time. The language is currently at the early prototype stage.
+I'm working on in my spare time. The language is currently at the early prototype stage.
 It will be dynamically typed and feature a user-extensible grammar. Use of
 functional-style programming will be encouraged by the language, but not mandated.
 
