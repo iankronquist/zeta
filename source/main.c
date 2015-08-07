@@ -11,7 +11,7 @@
 
 // TODO: move to interp.c
 /// Evaluate the code in a given string
-void eval_string(char* cstr)
+value_t eval_string(char* cstr)
 {
     size_t len = strlen(cstr);
 
@@ -26,11 +26,6 @@ void eval_string(char* cstr)
     // Until the end of the input is reached
     for (;;)
     {
-        // If this is the end of the input, stop
-        input_eat_ws(&input);
-        if (input_eof(&input))
-            break;
-
         // Parse one expression
         heapptr_t expr = parse_expr(&input);
 
@@ -39,11 +34,16 @@ void eval_string(char* cstr)
             printf("parse failed at idx %d\n", input.idx);
             printf("char: %c\n", input_peek_ch(&input));
 
-            return;
+            return FALSE_VAL;
         }
 
         // Evaluate the expression
-        eval_expr(expr);
+        value_t value = eval_expr(expr);
+
+        // If this is the end of the input, stop
+        input_eat_ws(&input);
+        if (input_eof(&input))
+            return value;
     }
 }
 

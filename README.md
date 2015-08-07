@@ -2,7 +2,7 @@ zeta
 ====
 
 This is an implementation of a Virtual Machine (VM) for the zeta programming language
-I'm working on in my spare time. The language is currently at the early prototype stage.
+I'm working on in my spare time. The language is currently at the early prototype stage, meaning the syntax and semantics are likely to change a lot in the coming months.
 
 Planned features of the language include:
 
@@ -15,6 +15,10 @@ Planned features of the language include:
 - No distinction between statements and expression, everything is an expression, as in LISP
 
 - Functional constructs such as map and foreach
+
+- A module system
+
+- An easy to use canvas library to render simple 2D graphics
 
 I've chosen to implement the VM core in pure C, for the following reasons:
 

@@ -24,7 +24,7 @@ Integer AST node
 */
 typedef struct
 {
-    desc_t desc;
+    tag_t tag;
 
     int64_t val;
 
@@ -63,7 +63,7 @@ Binary operator AST node
 */
 typedef struct
 {
-    desc_t desc;
+    tag_t tag;
 
     const opinfo_t* op;
 
@@ -77,7 +77,7 @@ If expression AST node
 */
 typedef struct
 {
-    desc_t desc;
+    tag_t tag;
 
     heapptr_t test_expr;
 
@@ -91,7 +91,7 @@ Function call AST node
 */
 typedef struct
 {
-    desc_t desc;
+    tag_t tag;
 
     /// Function to be called
     heapptr_t fun_expr;
@@ -106,7 +106,7 @@ Function expression node
 */
 typedef struct
 {
-    desc_t desc;
+    tag_t tag;
 
     // List of parameter names (strings)
     array_t* param_names;

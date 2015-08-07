@@ -3,7 +3,7 @@
 
 #include "vm.h"
 
-word_t eval_expr(heapptr_t expr);
+value_t eval_expr(heapptr_t expr);
 
 void test_interp();
 

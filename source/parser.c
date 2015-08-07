@@ -137,7 +137,7 @@ void input_eat_ws(input_t* input)
 /// Allocate an integer node
 heapptr_t ast_int_alloc(int64_t val)
 {
-    ast_int_t* node = (ast_int_t*)vm_alloc(sizeof(ast_int_t), DESC_AST_INT);
+    ast_int_t* node = (ast_int_t*)vm_alloc(sizeof(ast_int_t), TAG_AST_INT);
     node->val = val;
     return (heapptr_t)node;
 }
@@ -151,7 +151,7 @@ heapptr_t ast_binop_alloc(
 {
     ast_binop_t* node = (ast_binop_t*)vm_alloc(
         sizeof(ast_binop_t),
-        DESC_AST_BINOP
+        TAG_AST_BINOP
     );
     node->op = op;
     node->left = left;
@@ -168,7 +168,7 @@ heapptr_t ast_if_alloc(
 {
     ast_if_t* node = (ast_if_t*)vm_alloc(
         sizeof(ast_if_t),
-        DESC_AST_IF
+        TAG_AST_IF
     );
     node->test_expr = test_expr;
     node->then_expr = then_expr;
@@ -184,7 +184,7 @@ heapptr_t ast_call_alloc(
 {
     ast_call_t* node = (ast_call_t*)vm_alloc(
         sizeof(ast_call_t),
-        DESC_AST_CALL
+        TAG_AST_CALL
     );
     node->fun_expr = fun_expr;
     node->arg_exprs = arg_exprs;
