@@ -1,8 +1,11 @@
 zeta
 ====
 
-This is an implementation of a Virtual Machine (VM) for the zeta programming language
-I'm working on in my spare time. The language is currently at the early prototype stage, meaning the syntax and semantics are likely to change a lot in the coming months.
+This is an implementation of a Virtual Machine (VM) for the zeta programming
+language I'm working on in my spare time. Zeta draws inspiration from LISP,
+Smalltalk, ML, JavaScript and C. The language is currently at the early
+prototype stage, meaning the syntax and semantics are likely to change a lot
+in the coming months.
 
 Planned features of the language include:
 
