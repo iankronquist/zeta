@@ -5,5 +5,7 @@
 
 word_t eval_expr(heapptr_t expr);
 
+void test_interp();
+
 #endif
 

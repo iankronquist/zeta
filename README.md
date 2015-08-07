@@ -8,6 +8,8 @@ Planned features of the language include:
 
 - Dynamic typing
 
+- Garbage collection
+
 - A user-extensible grammar, giving programmers the ability to define new syntactic constructs
 
 - No distinction between statements and expression, everything is an expression, as in LISP

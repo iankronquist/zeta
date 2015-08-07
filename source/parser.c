@@ -701,6 +701,7 @@ void test_parser()
     test_parse_expr("[1 a]", true);
     test_parse_expr("[ 1\na ]", true);
     test_parse_expr("[ 1//comment\na ]", true);
+    test_parse_expr("'str' []", false);
 
     // Arithmetic expressions
     test_parse_expr("a + b", true);
