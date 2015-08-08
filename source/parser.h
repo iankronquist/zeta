@@ -4,6 +4,17 @@
 #include "vm.h"
 
 /**
+Source position information
+*/
+typedef struct
+{
+    uint32_t lineNo;
+
+    uint32_t colNo;
+
+} srcpos_t;
+
+/**
 Input stream, character/token stream for parsing functions
 */
 typedef struct
@@ -14,8 +25,8 @@ typedef struct
     /// Current index
     uint32_t idx;
 
-    /// Current position, srcpos_t
-    //add this later
+    /// Current source position
+    srcpos_t pos;
 
 } input_t;
 
@@ -115,6 +126,8 @@ typedef struct
     heapptr_t body_expr;
 
 } ast_fun_t;
+
+char* srcpos_to_str(srcpos_t pos, char* buf);
 
 input_t input_from_string(string_t* str);
 bool input_eof(input_t* input);

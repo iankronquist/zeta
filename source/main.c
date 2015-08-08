@@ -31,8 +31,11 @@ value_t eval_string(char* cstr)
 
         if (expr == NULL)
         {
-            printf("parse failed at idx %d\n", input.idx);
-            printf("char: %c\n", input_peek_ch(&input));
+            char buf[64];
+            printf(
+                "failed to parse expression, at %s\n",
+                srcpos_to_str(input.pos, buf)
+            );
 
             return FALSE_VAL;
         }
@@ -151,6 +154,8 @@ int main(int argc, char** argv)
     {
         for (;;)
         {
+            printf("z> ");
+
             char* cstr = read_line();
 
             // Evaluate the code string

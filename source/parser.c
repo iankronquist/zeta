@@ -9,11 +9,19 @@
 #include "parser.h"
 #include "vm.h"
 
+char* srcpos_to_str(srcpos_t pos, char* buf)
+{
+    sprintf(buf, "@%d:%d", pos.lineNo, pos.colNo);
+    return buf;
+}
+
 input_t input_from_string(string_t* str)
 {
     input_t input;
     input.str = str;
     input.idx = 0;
+    input.pos.lineNo = 0;
+    input.pos.colNo = 0;
     return input;
 }
 
@@ -39,7 +47,19 @@ char input_peek_ch(input_t* input)
 char input_read_ch(input_t* input)
 {
     char ch = input_peek_ch(input);
+
     input->idx++;
+
+    if (ch == '\n')
+    {
+        input->pos.lineNo++;
+        input->pos.colNo = 0;
+    }
+    else
+    {
+        input->pos.colNo++;
+    }
+
     return ch;
 }
 
