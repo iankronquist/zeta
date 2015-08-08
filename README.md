@@ -1,5 +1,13 @@
-Quickstart
-==========
+The Zeta Programming Language
+=============================
+
+This is an implementation of a Virtual Machine (VM) for the zeta programming
+language I'm working on in my spare time. Zeta draws inspiration from LISP,
+Smalltalk, ML, JavaScript and C. The language is currently at the early
+prototype stage, meaning the syntax and semantics are likely to change a lot
+in the coming months.
+
+## Quickstart
 
 Requirements:
 
@@ -13,16 +21,9 @@ To built the zeta VM, go to the source directory and run `make`
 
 Tests can then be run using the test command: `./zeta --test`
 
-The Zeta Programming Language
-=============================
+## Language Design
 
-This is an implementation of a Virtual Machine (VM) for the zeta programming
-language I'm working on in my spare time. Zeta draws inspiration from LISP,
-Smalltalk, ML, JavaScript and C. The language is currently at the early
-prototype stage, meaning the syntax and semantics are likely to change a lot
-in the coming months.
-
-Planned features of the language include:
+Planned features of the zeta programming language include:
 
 - Dynamic typing
 
@@ -38,8 +39,7 @@ Planned features of the language include:
 
 - An easy to use canvas library to render simple 2D graphics
 
-The Zeta Virtual Machine
-========================
+## Zeta VM
 
 I've chosen to implement the VM core in pure C, for the following reasons:
 
