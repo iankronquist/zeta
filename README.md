@@ -1,5 +1,20 @@
-zeta
-====
+Quickstart
+==========
+
+Requirements:
+
+- A C compiler
+
+- GNU make
+
+- A POSIX compliant OS (Linux or Mac OS)
+
+To built the zeta VM, go to the source directory and run `make`
+
+Tests can then be run using the test command: `./zeta --test`
+
+The Zeta Programming Language
+=============================
 
 This is an implementation of a Virtual Machine (VM) for the zeta programming
 language I'm working on in my spare time. Zeta draws inspiration from LISP,
@@ -22,6 +37,9 @@ Planned features of the language include:
 - A module system
 
 - An easy to use canvas library to render simple 2D graphics
+
+The Zeta Virtual Machine
+========================
 
 I've chosen to implement the VM core in pure C, for the following reasons:
 
