@@ -289,8 +289,26 @@ heapptr_t parse_str(input_t* input)
         // Consume this character
         char ch = input_read_ch(input);
 
+        // If this is the end of the string
         if (ch == '\'')
+        {
             break;
+        }
+
+        // If this is an escape sequence
+        if (ch == '\\')
+        {
+            char esc = input_read_ch(input);
+
+            switch (esc)
+            {
+                case 'n': ch = '\n'; break;
+                case 't': ch = '\t'; break;
+
+                default:
+                return NULL;
+            }
+        }
 
         buf[len] = ch;
         len++;
@@ -735,6 +753,8 @@ void test_parser()
     test_parse_expr("'abc'", true);
     test_parse_expr("'hi' // comment", true);
     test_parse_expr("'hi'", true);
+    test_parse_expr("'new\\nline'", true);
+    test_parse_expr("'invalid\\iesc'", false);
     test_parse_expr("true", true);
     test_parse_expr("false", true);
 
