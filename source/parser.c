@@ -155,9 +155,12 @@ void input_eat_ws(input_t* input)
 }
 
 /// Allocate an integer node
-heapptr_t ast_int_alloc(int64_t val)
+heapptr_t ast_const_alloc(value_t val)
 {
-    ast_int_t* node = (ast_int_t*)vm_alloc(sizeof(ast_int_t), TAG_AST_INT);
+    ast_const_t* node = (ast_const_t*)vm_alloc(
+        sizeof(ast_const_t),
+        TAG_AST_CONST
+    );
     node->val = val;
     return (heapptr_t)node;
 }
@@ -267,7 +270,8 @@ heapptr_t parse_int(input_t* input)
     if (numDigits == 0)
         return NULL;
 
-    return (heapptr_t)ast_int_alloc(intVal);
+    value_t val = { intVal };
+    return (heapptr_t)ast_const_alloc(val);
 }
 
 /**
@@ -417,9 +421,9 @@ heapptr_t parseAtom(input_t* input)
     // skip for now, no type tags, don't want true/false AST nodes
     // true and false boolean constants
     if (input_match_str(input, "true"))
-        assert (false);
+        return (heapptr_t)ast_const_alloc(VAL_TRUE);
     if (input_match_str(input, "false"))
-        assert (false);
+        return (heapptr_t)ast_const_alloc(VAL_FALSE);
 
     // TODO: parenthesized expression
 
@@ -731,6 +735,8 @@ void test_parser()
     test_parse_expr("'abc'", true);
     test_parse_expr("'hi' // comment", true);
     test_parse_expr("'hi'", true);
+    test_parse_expr("true", true);
+    test_parse_expr("false", true);
 
     test_parse_expr("[]", true);
     test_parse_expr("[1]", true);
@@ -767,6 +773,8 @@ void test_parser()
     test_parse_expr("if x then a+c else d", true);
     test_parse_expr("if x then a else b", true);
     test_parse_expr("if x == 1 then y+z else z+d", true);
+    test_parse_expr("if true then y else z", true);
+    test_parse_expr("if true or false then y else z", true);
     test_parse_expr("if x then a b", false);
 
     // Call expressions

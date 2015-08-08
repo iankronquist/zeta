@@ -10,8 +10,9 @@
 /// Global VM instance
 vm_t vm;
 
-/// Boolean false value
-const value_t FALSE_VAL = { 0, TAG_FALSE };
+/// Boolean constant values
+const value_t VAL_FALSE = { 0, TAG_FALSE };
+const value_t VAL_TRUE = { 0, TAG_TRUE };
 
 /// Initialize the VM
 void vm_init()

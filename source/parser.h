@@ -31,15 +31,16 @@ typedef struct
 } input_t;
 
 /**
-Integer AST node
+Constant value AST node
+Used for integers, floats and booleans
 */
 typedef struct
 {
     tag_t tag;
 
-    int64_t val;
+    value_t val;
 
-} ast_int_t;
+} ast_const_t;
 
 /**
 Operator information structure

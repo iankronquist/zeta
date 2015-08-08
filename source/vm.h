@@ -20,7 +20,7 @@ typedef uint64_t tag_t;
 #define TAG_ARRAY      0b01000
 #define TAG_OBJECT     0b00001
 #define TAG_CLOS       0b00011
-#define TAG_AST_INT    0b00101
+#define TAG_AST_CONST  0b00101
 #define TAG_AST_BINOP  0b00111
 #define TAG_AST_UNOP   0b01001
 #define TAG_AST_IF     0b01011
@@ -55,8 +55,9 @@ typedef struct
 
 } value_t;
 
-/// Boolean false value
-const value_t FALSE_VAL;
+/// Boolean constant values
+const value_t VAL_FALSE;
+const value_t VAL_TRUE;
 
 /**
 Virtual machine

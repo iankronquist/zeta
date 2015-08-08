@@ -37,7 +37,7 @@ value_t eval_string(char* cstr)
                 srcpos_to_str(input.pos, buf)
             );
 
-            return FALSE_VAL;
+            return VAL_FALSE;
         }
 
         // Evaluate the expression
