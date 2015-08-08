@@ -326,10 +326,8 @@ heapptr_t parse_expr_list(input_t* input, char endCh)
         input_eat_ws(input);
 
         // If this is the end of the list
-        char ch = input_peek_ch(input);
-        if (ch == endCh)
+        if (input_match_ch(input, endCh))
         {
-            input_read_ch(input);
             break;
         }
 
@@ -342,7 +340,25 @@ heapptr_t parse_expr_list(input_t* input, char endCh)
             return NULL;
         }
 
+        // Write the expression to the array
         array_set_ptr(arr, arr->len, expr);
+
+        // Read whitespace
+        input_eat_ws(input);
+
+        // If this is the end of the list
+        if (input_match_ch(input, endCh))
+        {
+            break;
+        }
+
+        // If this is not the first element, there must be a comma
+        if (!input_match_ch(input, ','))
+        {
+            // TODO: return a parse error node
+            // all the way to the top?
+            return NULL;
+        }
     }
 
     return (heapptr_t)arr;
@@ -698,9 +714,12 @@ void test_parser()
 
     test_parse_expr("[]", true);
     test_parse_expr("[1]", true);
-    test_parse_expr("[1 a]", true);
-    test_parse_expr("[ 1\na ]", true);
-    test_parse_expr("[ 1//comment\na ]", true);
+    test_parse_expr("[,]", false);
+    test_parse_expr("[1,a]", true);
+    test_parse_expr("[1 , a]", true);
+    test_parse_expr("[1,a, ]", true);
+    test_parse_expr("[ 1,\na ]", true);
+    test_parse_expr("[ 1//comment\n,a ]", true);
     test_parse_expr("'str' []", false);
 
     // Arithmetic expressions
@@ -733,10 +752,11 @@ void test_parser()
     // Call expressions
     test_parse_expr("a()", true);
     test_parse_expr("a(b)", true);
-    test_parse_expr("a(b c)", true);
-    test_parse_expr("a(b c+1)", true);
-    test_parse_expr("a(b,c+1)", false);
-    test_parse_expr("x + a(b c+1)", true);
-    test_parse_expr("x + a(b c+1) + y", true);
+    test_parse_expr("a(b,c)", true);
+    test_parse_expr("a(b,c+1)", true);
+    test_parse_expr("a(b,c+1,)", true);
+    test_parse_expr("a(b c+1)", false);
+    test_parse_expr("x + a(b,c+1)", true);
+    test_parse_expr("x + a(b,c+1) + y", true);
 }
 
