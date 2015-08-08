@@ -5,7 +5,9 @@ This is an implementation of a Virtual Machine (VM) for the zeta programming
 language I'm working on in my spare time. Zeta draws inspiration from LISP,
 Smalltalk, ML, JavaScript and C. The language is currently at the early
 prototype stage, meaning the syntax and semantics are likely to change a lot
-in the coming months.
+in the coming months. At the moment, this platform and language is mostly of
+interest to tinkerers and those with a special interest in compilers or
+language design.
 
 ## Quickstart
 
