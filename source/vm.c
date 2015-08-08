@@ -56,6 +56,14 @@ heapptr_t vm_alloc(uint32_t size, tag_t tag)
 }
 
 /**
+Get the tag for a heap object
+*/
+tag_t get_tag(heapptr_t obj)
+{
+    return *(tag_t*)obj;
+}
+
+/**
 Allocate a string on the hosted heap
 */
 string_t* string_alloc(uint32_t len)

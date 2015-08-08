@@ -25,6 +25,7 @@ typedef uint64_t tag_t;
 #define TAG_AST_UNOP   0b01001
 #define TAG_AST_IF     0b01011
 #define TAG_AST_CALL   0b01101
+#define TAG_AST_FUN    0b01111
 
 /// Initial VM heap size
 #define HEAP_SIZE (1 << 24)
@@ -118,6 +119,8 @@ typedef struct
 void vm_init();
 
 heapptr_t vm_alloc(uint32_t size, tag_t tag);
+
+tag_t get_tag(heapptr_t obj);
 
 string_t* string_alloc(uint32_t len);
 

@@ -159,9 +159,28 @@ int main(int argc, char** argv)
             char* cstr = read_line();
 
             // Evaluate the code string
-            eval_string(cstr);
+            value_t value = eval_string(cstr);
 
             free(cstr);
+
+            switch (value.tag)
+            {
+                case TAG_INT64:
+                printf("%ld\n", value.word.int64);
+                break;
+
+                case TAG_FALSE:
+                printf("false\n");
+                break;
+
+                case TAG_TRUE:
+                printf("true\n");
+                break;
+
+                default:
+                printf("unknown value tag\n");
+                break;
+            }
         }
     }
 
