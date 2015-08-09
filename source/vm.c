@@ -14,6 +14,30 @@ vm_t vm;
 const value_t VAL_FALSE = { 0, TAG_FALSE };
 const value_t VAL_TRUE = { 0, TAG_TRUE };
 
+value_t value_from_heapptr(heapptr_t v)
+{
+    value_t val;
+    val.word.heapptr = v;
+    val.tag = get_tag(v);
+    return val; 
+}
+
+value_t value_from_int64(int64_t v)
+{
+    value_t val;
+    val.word.int64 = v;
+    val.tag = TAG_INT64;
+    return val;
+}
+
+/**
+Get the tag for a heap object
+*/
+tag_t get_tag(heapptr_t obj)
+{
+    return *(tag_t*)obj;
+}
+
 /// Initialize the VM
 void vm_init()
 {
@@ -53,14 +77,6 @@ heapptr_t vm_alloc(uint32_t size, tag_t tag)
     *((tag_t*)ptr) = tag;
 
     return ptr;
-}
-
-/**
-Get the tag for a heap object
-*/
-tag_t get_tag(heapptr_t obj)
-{
-    return *(tag_t*)obj;
 }
 
 /**

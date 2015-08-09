@@ -20,6 +20,7 @@ typedef uint64_t tag_t;
 #define TAG_ARRAY      0b01000
 #define TAG_OBJECT     0b00001
 #define TAG_CLOS       0b00011
+#define TAG_RAW_PTR    0b00100
 #define TAG_AST_CONST  0b00101
 #define TAG_AST_BINOP  0b00111
 #define TAG_AST_UNOP   0b01001
@@ -115,12 +116,15 @@ typedef struct
 
 } array_t;
 
+value_t value_from_heapptr(heapptr_t v);
+value_t value_from_int64(int64_t v);
+
+tag_t get_tag(heapptr_t obj);
+
 /// Initialize the global VM instance
 void vm_init();
 
 heapptr_t vm_alloc(uint32_t size, tag_t tag);
-
-tag_t get_tag(heapptr_t obj);
 
 string_t* string_alloc(uint32_t len);
 

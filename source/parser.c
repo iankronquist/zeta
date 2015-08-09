@@ -168,8 +168,8 @@ heapptr_t ast_const_alloc(value_t val)
 /// Allocate a binary operator node
 heapptr_t ast_binop_alloc(
     const opinfo_t* op,
-    heapptr_t left,
-    heapptr_t right
+    heapptr_t left_expr,
+    heapptr_t right_expr
 )
 {
     ast_binop_t* node = (ast_binop_t*)vm_alloc(
@@ -177,8 +177,8 @@ heapptr_t ast_binop_alloc(
         TAG_AST_BINOP
     );
     node->op = op;
-    node->left = left;
-    node->right = right;
+    node->left_expr = left_expr;
+    node->right_expr = right_expr;
     return (heapptr_t)node;
 }
 
@@ -371,7 +371,7 @@ heapptr_t parse_if_expr(input_t* input)
 /**
 Parse a list of expressions
 */
-heapptr_t parse_expr_list(input_t* input, char endCh)
+heapptr_t parse_expr_list(input_t* input, char endCh, bool identList)
 {
     // Allocate an array with an initial capacity
     array_t* arr = array_alloc(4);
@@ -389,7 +389,7 @@ heapptr_t parse_expr_list(input_t* input, char endCh)
         }
 
         // Parse an expression
-        heapptr_t expr = parse_expr(input);
+        heapptr_t expr = identList? parse_ident(input):parse_expr(input);
 
         // The expression must not fail to parse
         if (expr == NULL)
@@ -431,16 +431,11 @@ heapptr_t parse_fun_expr(input_t* input)
     if (!input_match_ch(input, '('))
         return NULL;
 
-    array_t* param_list = (array_t*)parse_expr_list(input, ')');
+    array_t* param_list = (array_t*)parse_expr_list(input, ')', true);
 
-    // Validate that the parameter list contains only identifiers
-    for (size_t i = 0; i < param_list->len; ++i)
+    if (param_list == NULL)
     {
-        value_t elem = array_get(param_list, i);
-        if (elem.tag != TAG_STRING)
-        {
-            return NULL;
-        }
+        return NULL;
     }
 
     heapptr_t body_expr = parse_expr(input);
@@ -496,7 +491,7 @@ heapptr_t parseAtom(input_t* input)
 
     // Array literal
     if (input_match_ch(input, '['))
-        return parse_expr_list(input, ']');
+        return parse_expr_list(input, ']', false);
 
     // Parenthesized expression
     if (input_match_ch(input, '('))
@@ -695,34 +690,29 @@ heapptr_t parse_expr_prec(input_t* input, int minPrec)
         if (op == &OP_CALL)
         {
             // Parse the argument list and create the call expression
-            heapptr_t argExprs = parse_expr_list(input, ')');
+            heapptr_t arg_exprs = parse_expr_list(input, ')', false);
 
-            lhsExpr = ast_call_alloc(lhsExpr, argExprs);
+            lhsExpr = ast_call_alloc(lhsExpr, arg_exprs);
         }
 
-        /*
         // If this is a member expression
-        else if (op.str == ".")
+        else if (op == &OP_MEMBER)
         {
-            input.read();
-
             // Parse the identifier string
-            auto tok = input.read();
-            if (!(tok.type is Token.IDENT) &&
-                !(tok.type is Token.KEYWORD) &&
-                !(tok.type is Token.OP && ident(tok.stringVal)))
+            heapptr_t ident = parse_ident(input);
+
+            if (ident == NULL)
             {
-                throw new ParseError(
-                    "invalid member identifier \"" ~ tok.toString() ~ "\"", 
-                    tok.pos
-                );
+                return NULL;
             }
-            auto stringExpr = new StringExpr(tok.stringVal, tok.pos);
 
             // Produce an indexing expression
-            lhsExpr = new IndexExpr(lhsExpr, stringExpr, lhsExpr.pos);
+            lhsExpr = ast_binop_alloc(
+                op,
+                lhsExpr,
+                ident/*, lhsExpr.pos*/
+            );
         }
-        */
 
         // If this is a binary operator
         else if (op->arity == 2)
@@ -778,6 +768,8 @@ heapptr_t parse_expr(input_t* input)
 /// Test that the parsing of an expression succeeds
 void test_parse_expr(char* cstr)
 {
+    //printf("%s\n", cstr);
+
     string_t* str = string_alloc(strlen(cstr));
     strcpy(str->data, cstr);
     input_t input = input_from_string(str);
@@ -807,6 +799,8 @@ void test_parse_expr(char* cstr)
 /// Test that the parsing of an expression fails
 void test_parse_expr_fail(char* cstr)
 {
+    //printf("%s\n", cstr);
+
     string_t* str = string_alloc(strlen(cstr));
     strcpy(str->data, cstr);
     input_t input = input_from_string(str);
@@ -863,6 +857,11 @@ void test_parser()
     test_parse_expr_fail("a +");
     test_parse_expr_fail("a + b # c");
 
+    // Member expression
+    test_parse_expr("a.b");
+    test_parse_expr("a.b + c");
+    test_parse_expr_fail("a.'b'");
+
     // Array indexing
     test_parse_expr("a[0]");
     test_parse_expr("a[b]");
@@ -898,6 +897,7 @@ void test_parser()
     test_parse_expr("fun (x,y) x+y");
     test_parse_expr("fun (x,y) if x then y else 0");
     test_parse_expr_fail("fun (x,y)");
+    test_parse_expr_fail("fun ('x') x");
     test_parse_expr_fail("fun (x+y) y");
 }
 

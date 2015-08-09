@@ -21,7 +21,7 @@ Requirements:
 
 To built the zeta VM, go to the source directory and run `make`
 
-Tests can then be run using the test command: `./zeta --test`
+Tests can then by running the `make test` command
 
 ## Language Design
 

@@ -70,6 +70,10 @@ typedef struct
 
 // Operator definitions
 const opinfo_t OP_ADD;
+const opinfo_t OP_SUB;
+const opinfo_t OP_MUL;
+const opinfo_t OP_DIV;
+const opinfo_t OP_MOD;
 
 /**
 Binary operator AST node
@@ -80,8 +84,8 @@ typedef struct
 
     const opinfo_t* op;
 
-    heapptr_t left;
-    heapptr_t right;
+    heapptr_t left_expr;
+    heapptr_t right_expr;
 
 } ast_binop_t;
 

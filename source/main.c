@@ -165,16 +165,27 @@ int main(int argc, char** argv)
 
             switch (value.tag)
             {
-                case TAG_INT64:
-                printf("%ld\n", value.word.int64);
-                break;
-
                 case TAG_FALSE:
                 printf("false\n");
                 break;
 
                 case TAG_TRUE:
                 printf("true\n");
+                break;
+
+                case TAG_INT64:
+                printf("%ld\n", value.word.int64);
+                break;
+
+                case TAG_STRING:
+                {
+                    string_t* str = (string_t*)value.word.heapptr;
+                    putchar('\'');
+                    for (size_t i = 0; i < str->len; ++i)
+                        putchar(str->data[i]);
+                    putchar('\'');
+                    putchar('\n');
+                }
                 break;
 
                 default:
