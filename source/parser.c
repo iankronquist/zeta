@@ -182,6 +182,21 @@ heapptr_t ast_binop_alloc(
     return (heapptr_t)node;
 }
 
+/// Allocate a unary operator node
+heapptr_t ast_unop_alloc(
+    const opinfo_t* op,
+    heapptr_t expr
+)
+{
+    ast_unop_t* node = (ast_unop_t*)vm_alloc(
+        sizeof(ast_unop_t),
+        TAG_AST_UNOP
+    );
+    node->op = op;
+    node->expr = expr;
+    return (heapptr_t)node;
+}
+
 /// Allocate an if expression node
 heapptr_t ast_if_alloc(
     heapptr_t test_expr,
@@ -570,12 +585,19 @@ const opinfo_t* input_match_op(input_t* input, int minPrec, bool preUnary)
         break;
     }
 
-    // If any operator was found but its precedence isn't high enough
-    if (op && op->prec < minPrec)
+    // If any operator was found
+    if (op)
     {
-        // Backtrack to avoid consuming the operator
-        *input = beforeOp;
-        op = NULL;
+        // If its precedence isn't high enough or it doesn't meet
+        // the arity and associativity requirements
+        if ((op->prec < minPrec) ||
+            (preUnary && op->arity != 1) || 
+            (preUnary && op->assoc != 'r'))
+        {
+            // Backtrack to avoid consuming the operator
+            *input = beforeOp;
+            op = NULL;
+        }
     }
 
     // Return the matched operator, if any
@@ -599,31 +621,6 @@ heapptr_t parse_atom(input_t* input)
 
         return parse_int(input);
     }
-
-    // Identifier
-    if (isalnum(input_peek_ch(input)))
-    {
-        // If expression
-        if (input_match_str(input, "if"))
-            return parse_if_expr(input);
-
-        // Function expression
-        if (input_match_str(input, "fun"))
-            return parse_fun_expr(input);
-
-        // true and false boolean constants
-        if (input_match_str(input, "true"))
-            return (heapptr_t)ast_const_alloc(VAL_TRUE);
-        if (input_match_str(input, "false"))
-            return (heapptr_t)ast_const_alloc(VAL_FALSE);
-
-        return parse_ident(input);
-    }
-
-    // Identifier
-    if (input_peek_ch(input) == '_' || 
-        input_peek_ch(input) == '$')
-        return parse_ident(input);
 
     // String literal
     if (input_match_ch(input, '\''))
@@ -654,8 +651,8 @@ heapptr_t parse_atom(input_t* input)
     // Try matching a right-associative (prefix) unary operators
     const opinfo_t* op = input_match_op(input, 0, true);
 
-    // If a match was found
-    if (op && op->arity == 1)
+    // If a matching operator was found
+    if (op)
     {
         heapptr_t expr = parse_atom(input);
         if (expr == NULL)
@@ -664,12 +661,33 @@ heapptr_t parse_atom(input_t* input)
             return NULL;
         }
 
-        // TODO
-
-
-
-
+        return (heapptr_t)ast_unop_alloc(op, expr);
     }
+
+    // Identifier
+    if (isalnum(input_peek_ch(input)))
+    {
+        // If expression
+        if (input_match_str(input, "if"))
+            return parse_if_expr(input);
+
+        // Function expression
+        if (input_match_str(input, "fun"))
+            return parse_fun_expr(input);
+
+        // true and false boolean constants
+        if (input_match_str(input, "true"))
+            return (heapptr_t)ast_const_alloc(VAL_TRUE);
+        if (input_match_str(input, "false"))
+            return (heapptr_t)ast_const_alloc(VAL_FALSE);
+
+        return parse_ident(input);
+    }
+
+    // Identifiers beginning with non-alphanumeric characters
+    if (input_peek_ch(input) == '_' || 
+        input_peek_ch(input) == '$')
+        return parse_ident(input);
 
     // Parsing failed
     return NULL;
@@ -935,6 +953,8 @@ void test_parser()
     test_parse_expr("if x then y else z");
     test_parse_expr("if x then a+c else d");
     test_parse_expr("if x then a else b");
+    test_parse_expr("if not x then y else z");
+    test_parse_expr("if x and not x then true else false");
     test_parse_expr("if x <= 2 then y else z");
     test_parse_expr("if x == 1 then y+z else z+d");
     test_parse_expr("if true then y else z");
@@ -943,6 +963,7 @@ void test_parser()
 
     // Assignment
     test_parse_expr("x = 1");
+    test_parse_expr("x = -1");
     test_parse_expr("a.b = x + y");
     test_parse_expr("x = y = 1");
 

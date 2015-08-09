@@ -23,6 +23,8 @@ To built the zeta VM, go to the source directory and run `make`
 
 Tests can then by running the `make test` command
 
+A read-eval-print loop (shell) can be started by running the `./zeta` binary
+
 ## Language Design
 
 Planned features of the zeta programming language include:
