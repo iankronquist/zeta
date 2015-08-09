@@ -453,6 +453,8 @@ Parse an atomic expression
 */
 heapptr_t parseAtom(input_t* input)
 {
+    //printf("parseAtom\n");
+
     // Consume whitespace
     input_eat_ws(input);
 
@@ -659,7 +661,12 @@ heapptr_t parse_expr_prec(input_t* input, int minPrec)
     // associate the current atom to its left and then parse the rhs
 
     // Parse the first atom
-    heapptr_t lhsExpr = parseAtom(input);
+    heapptr_t lhs_expr = parseAtom(input);
+
+    if (lhs_expr == NULL)
+    {
+        return NULL;
+    }
 
     for (;;)
     {
@@ -699,7 +706,7 @@ heapptr_t parse_expr_prec(input_t* input, int minPrec)
             // Parse the argument list and create the call expression
             heapptr_t arg_exprs = parse_expr_list(input, ')', false);
 
-            lhsExpr = ast_call_alloc(lhsExpr, arg_exprs);
+            lhs_expr = ast_call_alloc(lhs_expr, arg_exprs);
         }
 
         // If this is a member expression
@@ -714,10 +721,10 @@ heapptr_t parse_expr_prec(input_t* input, int minPrec)
             }
 
             // Produce an indexing expression
-            lhsExpr = ast_binop_alloc(
+            lhs_expr = ast_binop_alloc(
                 op,
-                lhsExpr,
-                ident/*, lhsExpr.pos*/
+                lhs_expr,
+                ident/*, lhs_expr.pos*/
             );
         }
 
@@ -725,17 +732,17 @@ heapptr_t parse_expr_prec(input_t* input, int minPrec)
         else if (op->arity == 2)
         {
             // Recursively parse the rhs
-            heapptr_t rhsExpr = parse_expr_prec(input, nextMinPrec);
+            heapptr_t rhs_expr = parse_expr_prec(input, nextMinPrec);
 
             // The rhs expression must parse correctly
-            if (rhsExpr == NULL)
+            if (rhs_expr == NULL)
                 return NULL;
 
             // Create a new parent node for the expressions
-            lhsExpr = ast_binop_alloc(
+            lhs_expr = ast_binop_alloc(
                 op,
-                lhsExpr,
-                rhsExpr/*, lhsExpr.pos*/
+                lhs_expr,
+                rhs_expr/*, lhs_expr.pos*/
             );
 
             // If specified, match the operator closing string
@@ -745,25 +752,28 @@ heapptr_t parse_expr_prec(input_t* input, int minPrec)
 
         /*
         // If this is a unary operator
-        else if (op.arity == 1)
+        else if (op->arity == 1)
         {
-            // Consume the current token
-            input.read();
+            // TODO: if unary, must be left-assoc like ++, assert this
 
+            printf("unary operator\n");
+            assert (false);
+            
             // Update lhs with the new value
-            lhsExpr = new UnOpExpr(op, lhsExpr, lhsExpr.pos);
+            //lhs_expr = new UnOpExpr(op, lhs_expr, lhs_expr.pos);
         }
         */
 
         else
         {
             // Unhandled operator
+            printf("unhandled operator\n");
             assert (false);
         }
     }
 
     // Return the parsed expression
-    return lhsExpr;
+    return lhs_expr;
 }
 
 /// Parse an expression
@@ -858,11 +868,13 @@ void test_parser()
     test_parse_expr("(a + (b + c))");
     test_parse_expr("((a + b) + c)");
     test_parse_expr("(a + b) * (c + d)");
-    test_parse_expr_fail("(a + b))");
-    test_parse_expr_fail("((a + b)");
+    test_parse_expr_fail("*a");
+    test_parse_expr_fail("a*");
     test_parse_expr_fail("a # b");
     test_parse_expr_fail("a +");
     test_parse_expr_fail("a + b # c");
+    test_parse_expr_fail("(a + b))");
+    test_parse_expr_fail("((a + b)");
 
     // Member expression
     test_parse_expr("a.b");
