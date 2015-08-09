@@ -9,47 +9,6 @@
 #include "parser.h"
 #include "interp.h"
 
-// TODO: move to interp.c
-/// Evaluate the code in a given string
-value_t eval_string(char* cstr)
-{
-    size_t len = strlen(cstr);
-
-    // Allocate a hosted string object
-    string_t* str = string_alloc(len);
-
-    strncpy(str->data, cstr, len);
-
-    // Create a parser input stream object
-    input_t input = input_from_string(str);
-
-    // Until the end of the input is reached
-    for (;;)
-    {
-        // Parse one expression
-        heapptr_t expr = parse_expr(&input);
-
-        if (expr == NULL)
-        {
-            char buf[64];
-            printf(
-                "failed to parse expression, at %s\n",
-                srcpos_to_str(input.pos, buf)
-            );
-
-            return VAL_FALSE;
-        }
-
-        // Evaluate the expression
-        value_t value = eval_expr(expr);
-
-        // If this is the end of the input, stop
-        input_eat_ws(&input);
-        if (input_eof(&input))
-            return value;
-    }
-}
-
 /// Read a text file
 char* read_file(char* file_name)
 {
@@ -144,7 +103,7 @@ int main(int argc, char** argv)
             return -1;
 
         // Evaluate the code string
-        eval_string(cstr);
+        eval_str(cstr);
 
         free(cstr);
     }
@@ -159,7 +118,7 @@ int main(int argc, char** argv)
             char* cstr = read_line();
 
             // Evaluate the code string
-            value_t value = eval_string(cstr);
+            value_t value = eval_str(cstr);
 
             free(cstr);
 

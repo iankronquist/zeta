@@ -5,6 +5,8 @@
 
 value_t eval_expr(heapptr_t expr);
 
+value_t eval_str(char* cstr);
+
 void test_interp();
 
 #endif

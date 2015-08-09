@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <string.h>
 #include "interp.h"
 #include "parser.h"
 #include "vm.h"
@@ -51,6 +52,11 @@ value_t eval_expr(heapptr_t expr)
                 return (i0 > i1)? VAL_TRUE:VAL_FALSE;
             if (binop->op == &OP_GE)
                 return (i0 >= i1)? VAL_TRUE:VAL_FALSE;
+
+            if (binop->op == &OP_EQ)
+                return (memcmp(&v0, &v1, sizeof(v0)) == 0)? VAL_TRUE:VAL_FALSE;
+            if (binop->op == &OP_NE)
+                return (memcmp(&v0, &v1, sizeof(v0)) != 0)? VAL_TRUE:VAL_FALSE;
         }
 
         // TODO: use special error value, not accessible to user code
@@ -61,28 +67,94 @@ value_t eval_expr(heapptr_t expr)
     }
 }
 
-void test_eval_str(char* cstr, value_t expected)
+/// Evaluate the code in a given string
+value_t eval_str(char* cstr)
 {
+    size_t len = strlen(cstr);
 
-    // TODO
+    // Allocate a hosted string object
+    string_t* str = string_alloc(len);
 
+    strncpy(str->data, cstr, len);
 
-    // TODO: return value of last expression
+    // Create a parser input stream object
+    input_t input = input_from_string(str);
 
+    // Until the end of the input is reached
+    for (;;)
+    {
+        // Parse one expression
+        heapptr_t expr = parse_expr(&input);
+
+        if (expr == NULL)
+        {
+            char buf[64];
+            printf(
+                "failed to parse expression, at %s\n",
+                srcpos_to_str(input.pos, buf)
+            );
+
+            return VAL_FALSE;
+        }
+
+        // Evaluate the expression
+        value_t value = eval_expr(expr);
+
+        // If this is the end of the input, stop
+        input_eat_ws(&input);
+        if (input_eof(&input))
+            return value;
+    }
 }
 
-void test_eval_str_int(char* cstr, int64_t expected)
+void test_eval(char* cstr, value_t expected)
 {
-    // TODO
-    //test_eval_str();
+    value_t value = eval_str(cstr);
+
+    if (memcmp(&value, &expected, sizeof(value)) != 0)
+    {
+        printf(
+            "value doesn't match expected for input:\n%s\n",
+            cstr
+        );
+
+        exit(-1);
+    }
+}
+
+void test_eval_int(char* cstr, int64_t expected)
+{
+    test_eval(cstr, value_from_int64(expected));
+}
+
+void test_eval_true(char* cstr)
+{
+    test_eval(cstr, VAL_TRUE);
+}
+
+void test_eval_false(char* cstr)
+{
+    test_eval(cstr, VAL_FALSE);
 }
 
 void test_interp()
 {
-    test_eval_str_int("0", 0);
-    test_eval_str_int("7", 7);
+    test_eval_int("0", 0);
+    test_eval_int("7", 7);
+    test_eval_true("true");
+    test_eval_false("false");
 
-    // TODO: boolean expressions
+    // Comparisons
+    test_eval_true("0 < 5");
+    test_eval_true("0 <= 5");
+    test_eval_true("0 <= 0");
+    test_eval_true("0 == 0");
+    test_eval_true("0 != 1");
+    test_eval_true("true == true");
+    test_eval_false("true == false");
+
+
+
 
 
 
