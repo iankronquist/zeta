@@ -69,6 +69,10 @@ typedef struct
 } opinfo_t;
 
 // Operator definitions
+const opinfo_t OP_MEMBER;
+const opinfo_t OP_INDEX;
+const opinfo_t OP_NEG;
+const opinfo_t OP_NOT;
 const opinfo_t OP_ADD;
 const opinfo_t OP_SUB;
 const opinfo_t OP_MUL;
@@ -80,8 +84,25 @@ const opinfo_t OP_GT;
 const opinfo_t OP_GE;
 const opinfo_t OP_EQ;
 const opinfo_t OP_NE;
+const opinfo_t OP_BIT_AND;
+const opinfo_t OP_BIT_XOR;
+const opinfo_t OP_BIT_OR;
 const opinfo_t OP_AND;
 const opinfo_t OP_OR;
+const opinfo_t OP_ASSG;
+
+/**
+Unary operator AST node
+*/
+typedef struct
+{
+    tag_t tag;
+
+    const opinfo_t* op;
+
+    heapptr_t expr;
+
+} ast_unop_t;
 
 /**
 Binary operator AST node

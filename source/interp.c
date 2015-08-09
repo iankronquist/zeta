@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <string.h>
+#include <assert.h>
 #include "interp.h"
 #include "parser.h"
 #include "vm.h"
@@ -71,6 +72,24 @@ value_t eval_expr(heapptr_t expr)
                 return eval_expr(ifexpr->then_expr);
             else
                 return eval_expr(ifexpr->else_expr);
+        }
+
+        // Call expression
+        case TAG_AST_CALL:
+        {
+            ast_call_t* callexpr = (ast_call_t*)expr;
+
+
+            /*
+            /// Function to be called
+            heapptr_t fun_expr;
+
+            /// Argument expressions
+            heapptr_t arg_exprs;
+            */
+
+
+            assert (false);
         }
 
         // TODO: use special error value, not accessible to user code

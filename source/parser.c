@@ -448,12 +448,146 @@ heapptr_t parse_fun_expr(input_t* input)
     return (heapptr_t)ast_fun_alloc(param_list, body_expr);
 }
 
+/// Member operator
+const opinfo_t OP_MEMBER = { ".", NULL, 2, 16, 'l', false };
+
+/// Array indexing
+const opinfo_t OP_INDEX = { "[", "]", 2, 16, 'l', false };
+
+/// Function call, variable arity
+const opinfo_t OP_CALL = { "(", ")", -1, 15, 'l', false };
+
+/// Prefix unary operators
+const opinfo_t OP_NEG = { "-", NULL, 1, 13, 'r', false };
+const opinfo_t OP_NOT = { "not", NULL, 1, 13, 'r', false };
+
+/// Binary arithmetic operators
+const opinfo_t OP_MUL = { "*", NULL, 2, 12, 'l', false };
+const opinfo_t OP_DIV = { "/", NULL, 2, 12, 'l', true };
+const opinfo_t OP_MOD = { "%", NULL, 2, 12, 'l', true };
+const opinfo_t OP_ADD = { "+", NULL, 2, 11, 'l', false };
+const opinfo_t OP_SUB = { "-", NULL, 2, 11, 'l', true };
+
+/// Relational operators
+const opinfo_t OP_LT = { "<", NULL, 2, 9, 'l', false };
+const opinfo_t OP_LE = { "<=", NULL, 2, 9, 'l', false };
+const opinfo_t OP_GT = { ">", NULL, 2, 9, 'l', false };
+const opinfo_t OP_GE = { ">=", NULL, 2, 9, 'l', false };
+
+/// Equality comparison
+const opinfo_t OP_EQ = { "==", NULL, 2, 8, 'l', false };
+const opinfo_t OP_NE = { "!=", NULL, 2, 8, 'l', false };
+
+/// Bitwise operators
+const opinfo_t OP_BIT_AND = { "&", NULL, 2, 7, 'l', false };
+const opinfo_t OP_BIT_XOR = { "^", NULL, 2, 6, 'l', false };
+const opinfo_t OP_BIT_OR = { "|", NULL, 2, 5, 'l', false };
+
+/// Logical operators
+const opinfo_t OP_AND = { "and", NULL, 2, 4, 'l', false };
+const opinfo_t OP_OR = { "or", NULL, 2, 3, 'l', false };
+
+// Assignment
+const opinfo_t OP_ASSG = { "=", NULL, 2, 1, 'r', false };
+
+/**
+Try to match an operator in the input
+*/
+const opinfo_t* input_match_op(input_t* input, int minPrec, bool preUnary)
+{
+    input_t beforeOp = *input;
+
+    char ch = input_peek_ch(input);
+
+    const opinfo_t* op = NULL;
+
+    // Switch on the first character of the operator
+    // We do this to avoid a long cascade of match tests
+    switch (ch)
+    {
+        case '.':
+        if (input_match_ch(input, '.'))     op = &OP_MEMBER;
+        break;
+
+        case '[':
+        if (input_match_ch(input, '['))     op = &OP_INDEX;
+        break;
+
+        case '(':
+        if (input_match_ch(input, '('))     op = &OP_CALL;
+        break;
+
+        case 'n':
+        if (input_match_str(input, "not"))  op = &OP_NOT;
+        break;
+
+        case '*':
+        if (input_match_ch(input, '*'))     op = &OP_MUL;
+        break;
+
+        case '/':
+        if (input_match_ch(input, '/'))     op = &OP_DIV;
+        break;
+
+        case '%':
+        if (input_match_ch(input, '%'))     op = &OP_MOD;
+        break;
+
+        case '+':
+        if (input_match_ch(input, '+'))     op = &OP_ADD;
+        break;
+
+        case '-':
+        if (input_match_ch(input, '-'))
+            op = preUnary? &OP_NEG:&OP_SUB;
+        break;
+
+        case '<':
+        if (input_match_str(input, "<="))   op = &OP_LE;
+        if (input_match_ch(input, '<'))     op = &OP_LT;
+        break;
+
+        case '>':
+        if (input_match_str(input, ">="))   op = &OP_GE;
+        if (input_match_ch(input, '>'))     op = &OP_GT;
+        break;
+
+        case '=':
+        if (input_match_str(input, "=="))   op = &OP_EQ;
+        if (input_match_ch(input, '='))     op = &OP_ASSG;
+        break;
+
+        case '!':
+        if (input_match_str(input, "!="))   op = &OP_NE;
+        break;
+
+        case 'a':
+        if (input_match_str(input, "and"))  op = &OP_AND;
+        break;
+
+        case 'o':
+        if (input_match_str(input, "or"))   op = &OP_OR;
+        break;
+    }
+
+    // If any operator was found but its precedence isn't high enough
+    if (op && op->prec < minPrec)
+    {
+        // Backtrack to avoid consuming the operator
+        *input = beforeOp;
+        op = NULL;
+    }
+
+    // Return the matched operator, if any
+    return op;
+}
+
 /**
 Parse an atomic expression
 */
-heapptr_t parseAtom(input_t* input)
+heapptr_t parse_atom(input_t* input)
 {
-    //printf("parseAtom\n");
+    //printf("parse_atom\n");
 
     // Consume whitespace
     input_eat_ws(input);
@@ -517,135 +651,28 @@ heapptr_t parseAtom(input_t* input)
         return expr;
     }
 
-    // TODO: right-associative (prefix) unary operators
+    // Try matching a right-associative (prefix) unary operators
+    const opinfo_t* op = input_match_op(input, 0, true);
+
+    // If a match was found
+    if (op && op->arity == 1)
+    {
+        heapptr_t expr = parse_atom(input);
+        if (expr == NULL)
+        {
+            printf("expected atomic expression after prefix unary op\n");
+            return NULL;
+        }
+
+        // TODO
+
+
+
+
+    }
 
     // Parsing failed
     return NULL;
-}
-
-/// Member operator
-const opinfo_t OP_MEMBER = { ".", NULL, 2, 16, 'l', false };
-
-/// Array indexing
-const opinfo_t OP_INDEX = { "[", "]", 2, 16, 'l', false };
-
-/// Function call, variable arity
-const opinfo_t OP_CALL = { "(", ")", -1, 15, 'l', false };
-
-/// Prefix unary operators
-const opinfo_t OP_NEG = { "-", NULL, 1, 13, 'r', false };
-const opinfo_t OP_NOT = { "NOT", NULL, 1, 13, 'r', false };
-
-/// Binary arithmetic operators
-const opinfo_t OP_MUL = { "*", NULL, 2, 12, 'l', false };
-const opinfo_t OP_DIV = { "/", NULL, 2, 12, 'l', true };
-const opinfo_t OP_MOD = { "%", NULL, 2, 12, 'l', true };
-const opinfo_t OP_ADD = { "+", NULL, 2, 11, 'l', false };
-const opinfo_t OP_SUB = { "-", NULL, 2, 11, 'l', true };
-
-/// Relational operators
-const opinfo_t OP_LT = { "<", NULL, 2, 9, 'l', false };
-const opinfo_t OP_LE = { "<=", NULL, 2, 9, 'l', false };
-const opinfo_t OP_GT = { ">", NULL, 2, 9, 'l', false };
-const opinfo_t OP_GE = { ">=", NULL, 2, 9, 'l', false };
-
-/// Equality comparison
-const opinfo_t OP_EQ = { "==", NULL, 2, 8, 'l', false };
-const opinfo_t OP_NE = { "!=", NULL, 2, 8, 'l', false };
-
-/// Bitwise operators
-const opinfo_t OP_BIT_AND = { "&", NULL, 2, 7, 'l', false };
-const opinfo_t OP_BIT_XOR = { "^", NULL, 2, 6, 'l', false };
-const opinfo_t OP_BIT_OR = { "|", NULL, 2, 5, 'l', false };
-
-/// Logical operators
-const opinfo_t OP_AND = { "and", NULL, 2, 4, 'l', false };
-const opinfo_t OP_OR = { "or", NULL, 2, 3, 'l', false };
-
-/**
-Try to match an operator in the input
-*/
-const opinfo_t* input_match_op(input_t* input, int minPrec)
-{
-    input_t beforeOp = *input;
-
-    char ch = input_peek_ch(input);
-
-    const opinfo_t* op = NULL;
-
-    // Switch on the first character of the operator
-    // We do this to avoid a long cascade of match tests
-    switch (ch)
-    {
-        case '.':
-        if (input_match_ch(input, '.'))     op = &OP_MEMBER;
-        break;
-
-        case '[':
-        if (input_match_ch(input, '['))     op = &OP_INDEX;
-        break;
-
-        case '(':
-        if (input_match_ch(input, '('))     op = &OP_CALL;
-        break;
-
-        case '*':
-        if (input_match_ch(input, '*'))     op = &OP_MUL;
-        break;
-
-        case '/':
-        if (input_match_ch(input, '/'))     op = &OP_DIV;
-        break;
-
-        case '%':
-        if (input_match_ch(input, '%'))     op = &OP_MOD;
-        break;
-
-        case '+':
-        if (input_match_ch(input, '+'))     op = &OP_ADD;
-        break;
-
-        case '-':
-        if (input_match_ch(input, '-'))     op = &OP_SUB;
-        break;
-
-        case '<':
-        if (input_match_str(input, "<="))   op = &OP_LE;
-        if (input_match_ch(input, '<'))     op = &OP_LT;
-        break;
-
-        case '>':
-        if (input_match_str(input, ">="))   op = &OP_GE;
-        if (input_match_ch(input, '>'))     op = &OP_GT;
-        break;
-
-        case '=':
-        if (input_match_str(input, "=="))   op = &OP_EQ;
-        break;
-
-        case '!':
-        if (input_match_str(input, "!="))   op = &OP_NE;
-        break;
-
-        case 'a':
-        if (input_match_str(input, "and"))  op = &OP_AND;
-        break;
-
-        case 'o':
-        if (input_match_str(input, "or"))   op = &OP_OR;
-        break;
-    }
-
-    // If any operator was found but its precedence isn't high enough
-    if (op && op->prec < minPrec)
-    {
-        // Backtrack to avoid consuming the operator
-        *input = beforeOp;
-        op = NULL;
-    }
-
-    // Return the matched operator, if any
-    return op;
 }
 
 /**
@@ -667,7 +694,7 @@ heapptr_t parse_expr_prec(input_t* input, int minPrec)
     // associate the current atom to its left and then parse the rhs
 
     // Parse the first atom
-    heapptr_t lhs_expr = parseAtom(input);
+    heapptr_t lhs_expr = parse_atom(input);
 
     if (lhs_expr == NULL)
     {
@@ -683,7 +710,7 @@ heapptr_t parse_expr_prec(input_t* input, int minPrec)
 
         // Attempt to match an operator in the input
         // with sufficient precedence
-        const opinfo_t* op = input_match_op(input, minPrec);
+        const opinfo_t* op = input_match_op(input, minPrec, false);
 
         // If no operator matches, break out
         if (op == NULL)
@@ -914,6 +941,11 @@ void test_parser()
     test_parse_expr("if true or false then y else z");
     test_parse_expr_fail("if x then a b");
 
+    // Assignment
+    test_parse_expr("x = 1");
+    test_parse_expr("a.b = x + y");
+    test_parse_expr("x = y = 1");
+
     // Call expressions
     test_parse_expr("a()");
     test_parse_expr("a(b)");
@@ -936,6 +968,6 @@ void test_parser()
     test_parse_expr_fail("fun (x+y) y");
 
     // Fibonacci
-    test_parse_expr("fun (n) if n < 2 then n else fib(n-1) + fib(n-2)");
+    test_parse_expr("fib = fun (n) if n < 2 then n else fib(n-1) + fib(n-2)");
 }
 
