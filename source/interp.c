@@ -42,6 +42,15 @@ value_t eval_expr(heapptr_t expr)
                 return value_from_int64(i0 / i1);
             if (binop->op == &OP_MOD)
                 return value_from_int64(i0 % i1);
+
+            if (binop->op == &OP_LT)
+                return (i0 < i1)? VAL_TRUE:VAL_FALSE;
+            if (binop->op == &OP_LE)
+                return (i0 <= i1)? VAL_TRUE:VAL_FALSE;
+            if (binop->op == &OP_GT)
+                return (i0 > i1)? VAL_TRUE:VAL_FALSE;
+            if (binop->op == &OP_GE)
+                return (i0 >= i1)? VAL_TRUE:VAL_FALSE;
         }
 
         // TODO: use special error value, not accessible to user code

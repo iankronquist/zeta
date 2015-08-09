@@ -74,6 +74,14 @@ const opinfo_t OP_SUB;
 const opinfo_t OP_MUL;
 const opinfo_t OP_DIV;
 const opinfo_t OP_MOD;
+const opinfo_t OP_LT;
+const opinfo_t OP_LE;
+const opinfo_t OP_GT;
+const opinfo_t OP_GE;
+const opinfo_t OP_EQ;
+const opinfo_t OP_NE;
+const opinfo_t OP_AND;
+const opinfo_t OP_OR;
 
 /**
 Binary operator AST node

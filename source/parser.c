@@ -602,13 +602,13 @@ const opinfo_t* input_match_op(input_t* input, int minPrec)
         break;
 
         case '<':
-        if (input_match_ch(input, '<'))     op = &OP_GT;
-        if (input_match_str(input, "<="))   op = &OP_GE;
+        if (input_match_str(input, "<="))   op = &OP_LE;
+        if (input_match_ch(input, '<'))     op = &OP_LT;
         break;
 
         case '>':
-        if (input_match_ch(input, '>'))     op = &OP_GT;
         if (input_match_str(input, ">="))   op = &OP_GE;
+        if (input_match_ch(input, '>'))     op = &OP_GT;
         break;
 
         case '=':
@@ -881,6 +881,7 @@ void test_parser()
     test_parse_expr("if x then y else z");
     test_parse_expr("if x then a+c else d");
     test_parse_expr("if x then a else b");
+    test_parse_expr("if x <= 2 then y else z");
     test_parse_expr("if x == 1 then y+z else z+d");
     test_parse_expr("if true then y else z");
     test_parse_expr("if true or false then y else z");
