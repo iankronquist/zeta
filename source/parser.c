@@ -132,22 +132,18 @@ void input_eat_ws(input_t* input)
         }
 
         // If this is a multi-line comment
-        /*
         if (input_match_str(input, "/*"))
         {
-            // TODO: handle nested comments
-
-            // Read until and end of line is reached
+            // Read until the end of the comment
             for (;;)
             {
                 char ch = input_read_ch(input);
-                if (ch == '\n' || ch == '\0')
+                if (ch == '*' && input_match_ch(input, '/'))
                     break;
             }
 
             continue;
         }
-        */
 
         // This isn't whitespace, stop
         break;
@@ -801,19 +797,20 @@ heapptr_t parse_expr_prec(input_t* input, int minPrec)
                 return NULL;
         }
 
-        /*
         // If this is a unary operator
         else if (op->arity == 1)
         {
-            // TODO: if unary, must be left-assoc like ++, assert this
+            if (op->assoc != 'l')
+            {
+                return NULL;
+            }
 
-            printf("unary operator\n");
+            printf("postfix unary operator\n");
             assert (false);
             
             // Update lhs with the new value
             //lhs_expr = new UnOpExpr(op, lhs_expr, lhs_expr.pos);
         }
-        */
 
         else
         {
@@ -913,8 +910,15 @@ void test_parser()
     test_parse_expr("[1 , a]");
     test_parse_expr("[1,a, ]");
     test_parse_expr("[ 1,\na ]");
-    test_parse_expr("[ 1//comment\n,a ]");
     test_parse_expr_fail("[,]");
+
+    // Comments
+    test_parse_expr("1 // comment");
+    test_parse_expr("[ 1//comment\n,a ]");
+    test_parse_expr("1 /* comment */ + x");
+    test_parse_expr("1 /* // comment */ + x");
+    test_parse_expr_fail("1 // comment\n#1");
+    test_parse_expr_fail("1 /* */ */");
 
     // Arithmetic expressions
     test_parse_expr("a + b");
