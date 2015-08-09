@@ -483,9 +483,13 @@ heapptr_t parseAtom(input_t* input)
         if (input_match_str(input, "false"))
             return (heapptr_t)ast_const_alloc(VAL_FALSE);
 
-        // Identifier
         return parse_ident(input);
     }
+
+    // Identifier
+    if (input_peek_ch(input) == '_' || 
+        input_peek_ch(input) == '$')
+        return parse_ident(input);
 
     // String literal
     if (input_match_ch(input, '\''))
@@ -512,6 +516,8 @@ heapptr_t parseAtom(input_t* input)
 
         return expr;
     }
+
+    // TODO: right-associative (prefix) unary operators
 
     // Parsing failed
     return NULL;
@@ -837,9 +843,15 @@ void test_parse_expr_fail(char* cstr)
 /// Test the functionality of the parser
 void test_parser()
 {
-    test_parse_expr("123");
+    // Identifiers
     test_parse_expr("foobar");
     test_parse_expr("  foo_bar  ");
+    test_parse_expr("  foo_bar  ");
+    test_parse_expr("_foo");
+    test_parse_expr("$foo");
+
+    // Literals
+    test_parse_expr("123");
     test_parse_expr("'abc'");
     test_parse_expr("'hi' // comment");
     test_parse_expr("'hi'");
@@ -847,7 +859,9 @@ void test_parser()
     test_parse_expr("true");
     test_parse_expr("false");
     test_parse_expr_fail("'invalid\\iesc'");
+    test_parse_expr_fail("'str' []");
 
+    // Array literals
     test_parse_expr("[]");
     test_parse_expr("[1]");
     test_parse_expr("[1,a]");
@@ -856,7 +870,6 @@ void test_parser()
     test_parse_expr("[ 1,\na ]");
     test_parse_expr("[ 1//comment\n,a ]");
     test_parse_expr_fail("[,]");
-    test_parse_expr_fail("'str' []");
 
     // Arithmetic expressions
     test_parse_expr("a + b");
@@ -879,6 +892,8 @@ void test_parser()
     // Member expression
     test_parse_expr("a.b");
     test_parse_expr("a.b + c");
+    test_parse_expr("$runtime.0.add");
+    test_parse_expr("$api.file.2.fopen");
     test_parse_expr_fail("a.'b'");
 
     // Array indexing
