@@ -24,6 +24,7 @@ value_t eval_expr(heapptr_t expr)
             return value_from_heapptr(expr);
         }
 
+        // Binary operator (e.g. a + b)
         case TAG_AST_BINOP:
         {
             ast_binop_t* binop = (ast_binop_t*)expr;
@@ -57,6 +58,19 @@ value_t eval_expr(heapptr_t expr)
                 return (memcmp(&v0, &v1, sizeof(v0)) == 0)? VAL_TRUE:VAL_FALSE;
             if (binop->op == &OP_NE)
                 return (memcmp(&v0, &v1, sizeof(v0)) != 0)? VAL_TRUE:VAL_FALSE;
+        }
+
+        // If expression
+        case TAG_AST_IF:
+        {
+            ast_if_t* ifexpr = (ast_if_t*)expr;
+
+            value_t t = eval_expr(ifexpr->test_expr);
+
+            if (t.tag != TAG_FALSE)
+                return eval_expr(ifexpr->then_expr);
+            else
+                return eval_expr(ifexpr->else_expr);
         }
 
         // TODO: use special error value, not accessible to user code
@@ -152,6 +166,12 @@ void test_interp()
     test_eval_true("0 != 1");
     test_eval_true("true == true");
     test_eval_false("true == false");
+
+    // If expression
+    test_eval_int("if true then 1 else 0", 1);
+    test_eval_int("if false then 1 else 0", 0);
+    test_eval_int("if 0 < 10 then 7 else 3", 7);
+
 
 
 
