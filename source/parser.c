@@ -531,18 +531,15 @@ const opinfo_t OP_NOT = { "NOT", NULL, 1, 13, 'r', false };
 /// Binary arithmetic operators
 const opinfo_t OP_MUL = { "*", NULL, 2, 12, 'l', false };
 const opinfo_t OP_DIV = { "/", NULL, 2, 12, 'l', true };
-const opinfo_t OP_MOD = { "%", NULL, 2, 12, 'l', false };
+const opinfo_t OP_MOD = { "%", NULL, 2, 12, 'l', true };
 const opinfo_t OP_ADD = { "+", NULL, 2, 11, 'l', false };
 const opinfo_t OP_SUB = { "-", NULL, 2, 11, 'l', true };
 
 /// Relational operators
-/*
-{ "<"w         , 2, IN_PREC, 'l' },
-{ "<="w        , 2, IN_PREC, 'l' },
-{ ">"w         , 2, IN_PREC, 'l' },
-{ ">="w        , 2, IN_PREC, 'l' },
-{ "in"w        , 2, IN_PREC, 'l' },
-*/
+const opinfo_t OP_LT = { "<", NULL, 2, 9, 'l', false };
+const opinfo_t OP_LE = { "<=", NULL, 2, 9, 'l', false };
+const opinfo_t OP_GT = { ">", NULL, 2, 9, 'l', false };
+const opinfo_t OP_GE = { ">=", NULL, 2, 9, 'l', false };
 
 /// Equality comparison
 const opinfo_t OP_EQ = { "==", NULL, 2, 8, 'l', false };
@@ -602,6 +599,16 @@ const opinfo_t* input_match_op(input_t* input, int minPrec)
 
         case '-':
         if (input_match_ch(input, '-'))     op = &OP_SUB;
+        break;
+
+        case '<':
+        if (input_match_ch(input, '<'))     op = &OP_GT;
+        if (input_match_str(input, "<="))   op = &OP_GE;
+        break;
+
+        case '>':
+        if (input_match_ch(input, '>'))     op = &OP_GT;
+        if (input_match_str(input, ">="))   op = &OP_GE;
         break;
 
         case '=':
@@ -899,5 +906,8 @@ void test_parser()
     test_parse_expr_fail("fun (x,y)");
     test_parse_expr_fail("fun ('x') x");
     test_parse_expr_fail("fun (x+y) y");
+
+    // Fibonacci
+    test_parse_expr("fun (n) if n < 2 then n else fib(n-1) + fib(n-2)");
 }
 
