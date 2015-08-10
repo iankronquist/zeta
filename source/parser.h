@@ -143,7 +143,7 @@ typedef struct
     heapptr_t fun_expr;
 
     /// Argument expressions
-    heapptr_t arg_exprs;
+    array_t* arg_exprs;
 
 } ast_call_t;
 

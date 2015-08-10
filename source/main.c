@@ -138,13 +138,14 @@ int main(int argc, char** argv)
 
                 case TAG_STRING:
                 {
-                    string_t* str = (string_t*)value.word.heapptr;
                     putchar('\'');
-                    for (size_t i = 0; i < str->len; ++i)
-                        putchar(str->data[i]);
-                    putchar('\'');
-                    putchar('\n');
+                    string_print((string_t*)value.word.heapptr);
+                    puts("'");
                 }
+                break;
+
+                case TAG_ARRAY:
+                printf("array\n");
                 break;
 
                 default:

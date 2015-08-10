@@ -213,7 +213,7 @@ heapptr_t ast_if_alloc(
 /// Allocate a function call node
 heapptr_t ast_call_alloc(
     heapptr_t fun_expr,
-    heapptr_t arg_exprs
+    array_t* arg_exprs
 )
 {
     ast_call_t* node = (ast_call_t*)vm_alloc(
@@ -382,7 +382,7 @@ heapptr_t parse_if_expr(input_t* input)
 /**
 Parse a list of expressions
 */
-heapptr_t parse_expr_list(input_t* input, char endCh, bool identList)
+array_t* parse_expr_list(input_t* input, char endCh, bool identList)
 {
     // Allocate an array with an initial capacity
     array_t* arr = array_alloc(4);
@@ -429,7 +429,7 @@ heapptr_t parse_expr_list(input_t* input, char endCh, bool identList)
         }
     }
 
-    return (heapptr_t)arr;
+    return arr;
 }
 
 /**
@@ -442,7 +442,7 @@ heapptr_t parse_fun_expr(input_t* input)
     if (!input_match_ch(input, '('))
         return NULL;
 
-    array_t* param_list = (array_t*)parse_expr_list(input, ')', true);
+    array_t* param_list = parse_expr_list(input, ')', true);
 
     if (param_list == NULL)
     {
@@ -624,7 +624,7 @@ heapptr_t parse_atom(input_t* input)
 
     // Array literal
     if (input_match_ch(input, '['))
-        return parse_expr_list(input, ']', false);
+        return (heapptr_t)parse_expr_list(input, ']', false);
 
     // Parenthesized expression
     if (input_match_ch(input, '('))
@@ -751,7 +751,7 @@ heapptr_t parse_expr_prec(input_t* input, int minPrec)
         if (op == &OP_CALL)
         {
             // Parse the argument list and create the call expression
-            heapptr_t arg_exprs = parse_expr_list(input, ')', false);
+            array_t* arg_exprs = parse_expr_list(input, ')', false);
 
             lhs_expr = ast_call_alloc(lhs_expr, arg_exprs);
         }

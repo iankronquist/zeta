@@ -127,6 +127,7 @@ void vm_init();
 heapptr_t vm_alloc(uint32_t size, tag_t tag);
 
 string_t* string_alloc(uint32_t len);
+void string_print(string_t* str);
 
 array_t* array_alloc(uint32_t cap);
 void array_set(array_t* array, uint32_t idx, value_t val);

@@ -91,6 +91,12 @@ string_t* string_alloc(uint32_t len)
     return str;
 }
 
+void string_print(string_t* str)
+{
+    for (size_t i = 0; i < str->len; ++i)
+        putchar(str->data[i]);
+}
+
 bool string_eq(string_t* stra, string_t* strb)
 {
     if (stra->len != strb->len)

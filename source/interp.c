@@ -25,6 +25,14 @@ value_t eval_expr(heapptr_t expr)
             return value_from_heapptr(expr);
         }
 
+        // Array literal expression
+        case TAG_ARRAY:
+        {
+            // TODO: must create new array with evaluated expressions
+
+            assert (false);
+        }
+
         // Binary operator (e.g. a + b)
         case TAG_AST_BINOP:
         {
@@ -34,6 +42,9 @@ value_t eval_expr(heapptr_t expr)
             value_t v1 = eval_expr(binop->right_expr);
             int64_t i0 = v0.word.int64;
             int64_t i1 = v1.word.int64;
+
+            if (binop->op == &OP_INDEX)
+                return array_get((array_t*)v0.word.heapptr, i1);
 
             if (binop->op == &OP_ADD)
                 return value_from_int64(i0 + i1);
@@ -78,16 +89,30 @@ value_t eval_expr(heapptr_t expr)
         case TAG_AST_CALL:
         {
             ast_call_t* callexpr = (ast_call_t*)expr;
+            heapptr_t fun_expr = callexpr->fun_expr;
+            array_t* arg_exprs = callexpr->arg_exprs;
 
+            if (get_tag(fun_expr) == TAG_STRING && arg_exprs->len == 1)
+            {
+                string_t* fun_name = (string_t*)fun_expr;
+                char* name_cstr = fun_name->data;
 
-            /*
-            /// Function to be called
-            heapptr_t fun_expr;
+                heapptr_t arg_expr = array_get(arg_exprs, 0).word.heapptr;
+                value_t arg_val = eval_expr(arg_expr);
+                string_t* arg_str = (string_t*)arg_val.word.heapptr;
 
-            /// Argument expressions
-            heapptr_t arg_exprs;
-            */
+                if (strncmp(name_cstr, "$print_i64", 10) == 0)
+                {
+                    printf("%ld", arg_val.word.int64);
+                    return VAL_TRUE;
+                }
 
+                if (strncmp(name_cstr, "$print_str", 10) == 0)
+                {
+                    string_print(arg_str);
+                    return VAL_TRUE;
+                }
+            }
 
             assert (false);
         }
