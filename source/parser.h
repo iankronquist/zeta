@@ -44,6 +44,21 @@ typedef struct
 } ast_const_t;
 
 /**
+Variable reference node
+*/
+typedef struct
+{
+    tag_t tag;
+
+    /// Identifier name string
+    heapptr_t name_str;
+
+    /// Local index
+    uint32_t idx;
+
+} ast_ref_t;
+
+/**
 Operator information structure
 */
 typedef struct

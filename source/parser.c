@@ -161,6 +161,18 @@ heapptr_t ast_const_alloc(value_t val)
     return (heapptr_t)node;
 }
 
+/// Allocate a reference node
+heapptr_t ast_ref_alloc(heapptr_t name_str)
+{
+   ast_ref_t* node = (ast_ref_t*)vm_alloc(
+        sizeof(ast_ref_t),
+        TAG_AST_REF
+    );
+    node->name_str = name_str;
+    node->idx = 0xFFFFFFFF;
+    return (heapptr_t)node;
+}
+
 /// Allocate a binary operator node
 heapptr_t ast_binop_alloc(
     const opinfo_t* op,
@@ -269,35 +281,6 @@ heapptr_t parse_ident(input_t* input)
     strncpy(str->data, input->str->data + startIdx, len);
 
     return (heapptr_t)str;
-}
-
-/**
-Parse an integer value
-*/
-heapptr_t parse_int(input_t* input)
-{
-    size_t numDigits = 0;
-    int64_t intVal = 0;
-
-    for (;;)
-    {
-        char ch = input_peek_ch(input);
-
-        if (!isdigit(ch))
-            break;
-
-        intVal = 10 * intVal + (ch - '0');
-
-        // Consume this digit
-        input_read_ch(input);
-        numDigits++;
-    }
-
-    if (numDigits == 0)
-        return NULL;
-
-    value_t val = { intVal, TAG_INT64 };
-    return (heapptr_t)ast_const_alloc(val);
 }
 
 /**
@@ -613,18 +596,60 @@ heapptr_t parse_atom(input_t* input)
     // Numerical constant
     if (isdigit(input_peek_ch(input)))
     {
-        // TODO: floating-point numbers
+        char* numStart = NULL;
+        char* endInt = NULL;
+        char* endFloat = NULL;
 
-        return parse_int(input);
+        int64_t intVal;
+        double floatVal;
+
+        // Hexadecimal literals
+        if (input_match_str(input, "0x"))
+        {
+            numStart = input->str->data + input->idx;
+            intVal = strtol(numStart, &endInt, 16);
+        }
+
+        // Binary literals
+        else if (input_match_str(input, "0b"))
+        {
+            numStart = input->str->data + input->idx;
+            intVal = strtol(numStart, &endInt, 2);
+        }
+
+        // Decimal literals
+        else
+        {
+            // Try parsing both as an integer and floating-point value
+            numStart = input->str->data + input->idx;
+            intVal = strtol(numStart, &endInt, 10);
+            floatVal = strtod(numStart, &endFloat);
+        }
+
+        // If the floating-point parse recognized more characters
+        if (endFloat > endInt)
+        {
+            input->idx += endFloat - numStart;
+
+            // TODO
+            printf("float value!\n");
+        }
+
+        input->idx += endFloat - numStart;
+        return (heapptr_t)ast_const_alloc(value_from_int64(intVal));
     }
 
     // String literal
     if (input_match_ch(input, '\''))
+    {
         return parse_str(input);
+    }
 
     // Array literal
     if (input_match_ch(input, '['))
+    {
         return (heapptr_t)parse_expr_list(input, ']', false);
+    }
 
     // Parenthesized expression
     if (input_match_ch(input, '('))
@@ -676,14 +701,15 @@ heapptr_t parse_atom(input_t* input)
             return (heapptr_t)ast_const_alloc(VAL_TRUE);
         if (input_match_str(input, "false"))
             return (heapptr_t)ast_const_alloc(VAL_FALSE);
-
-        return parse_ident(input);
     }
 
     // Identifiers beginning with non-alphanumeric characters
     if (input_peek_ch(input) == '_' || 
-        input_peek_ch(input) == '$')
-        return parse_ident(input);
+        input_peek_ch(input) == '$' ||
+        isalnum(input_peek_ch(input)))
+    {
+        return ast_ref_alloc(parse_ident(input));
+    }
 
     // Parsing failed
     return NULL;
@@ -894,6 +920,8 @@ void test_parser()
 
     // Literals
     test_parse_expr("123");
+    test_parse_expr("0xFF");
+    test_parse_expr("0b101");
     test_parse_expr("'abc'");
     test_parse_expr("'hi' // comment");
     test_parse_expr("'hi'");

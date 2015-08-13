@@ -22,11 +22,12 @@ typedef uint64_t tag_t;
 #define TAG_CLOS       0b00011
 #define TAG_RAW_PTR    0b00100
 #define TAG_AST_CONST  0b00101
-#define TAG_AST_BINOP  0b00111
-#define TAG_AST_UNOP   0b01001
-#define TAG_AST_IF     0b01011
-#define TAG_AST_CALL   0b01101
-#define TAG_AST_FUN    0b01111
+#define TAG_AST_REF    0b00111
+#define TAG_AST_BINOP  0b01001
+#define TAG_AST_UNOP   0b00011
+#define TAG_AST_IF     0b01101
+#define TAG_AST_CALL   0b01111
+#define TAG_AST_FUN    0b10001
 
 /// Initial VM heap size
 #define HEAP_SIZE (1 << 24)

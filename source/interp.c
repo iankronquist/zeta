@@ -5,9 +5,18 @@
 #include "parser.h"
 #include "vm.h"
 
-// TODO: need some kind of environment object
-// map variable name strings to values
-// for now, no type tags
+#define MAX_LOCALS 64
+
+/**
+Interpreter stack frame
+*/
+typedef struct
+{
+    size_t numLocals;
+
+    value_t locals[MAX_LOCALS];
+
+} frame_t;
 
 value_t eval_expr(heapptr_t expr)
 {
@@ -117,6 +126,13 @@ value_t eval_expr(heapptr_t expr)
             assert (false);
         }
 
+        // Function/closure expression
+        case TAG_AST_FUN:
+        {
+            // For now, return the function unchanged
+            return value_from_heapptr(expr);
+        }
+
         // TODO: use special error value, not accessible to user code
         // run_error_t
         default:
@@ -199,6 +215,8 @@ void test_interp()
 {
     test_eval_int("0", 0);
     test_eval_int("7", 7);
+    test_eval_int("0xFF", 255);
+    test_eval_int("0b101", 5);
     test_eval_true("true");
     test_eval_false("false");
 
