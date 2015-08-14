@@ -349,15 +349,24 @@ heapptr_t parse_if_expr(input_t* input)
 
     input_eat_ws(input);
     if (!input_match_str(input, "then"))
+    {
         return NULL;
+    }
 
     heapptr_t then_expr = parse_expr(input);
 
-    input_eat_ws(input);
-    if (!input_match_str(input, "else"))
-        return NULL;
+    heapptr_t else_expr;
 
-    heapptr_t else_expr = parse_expr(input);
+    // If these is an else clause
+    input_eat_ws(input);
+    if (input_match_str(input, "else"))
+    {
+       else_expr = parse_expr(input);
+    }
+    else
+    {
+        else_expr = (heapptr_t)ast_const_alloc(VAL_FALSE);
+    }
 
     return ast_if_alloc(test_expr, then_expr, else_expr);
 }
@@ -832,7 +841,7 @@ heapptr_t parse_expr_prec(input_t* input, int minPrec)
 
             printf("postfix unary operator\n");
             assert (false);
-            
+
             // Update lhs with the new value
             //lhs_expr = new UnOpExpr(op, lhs_expr, lhs_expr.pos);
         }
@@ -983,6 +992,8 @@ void test_parser()
     test_parse_expr_fail("a[0 1]");
 
     // If expression
+    test_parse_expr("if x then y");
+    test_parse_expr("if x then y + 1");
     test_parse_expr("if x then y else z");
     test_parse_expr("if x then a+c else d");
     test_parse_expr("if x then a else b");
