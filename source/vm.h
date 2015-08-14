@@ -10,7 +10,7 @@ typedef uint8_t* heapptr_t;
 /// Value tag (and object header)
 typedef uint64_t tag_t;
 
-/// Value tags
+/// Non-object value tags
 /// Note: non-object values have the least bit set to zero
 /// Note: the boolean false has tag zero
 #define TAG_FALSE      0b00000
@@ -19,9 +19,12 @@ typedef uint64_t tag_t;
 #define TAG_FLOAT64    0b00110
 #define TAG_STRING     0b01000
 #define TAG_ARRAY      0b01010
+#define TAG_RAW_PTR    0b01100
+
+/// Object value tags
+/// Note: object values have the least bit set to one
 #define TAG_OBJECT     0b00001
 #define TAG_CLOS       0b00011
-#define TAG_RAW_PTR    0b00100
 #define TAG_AST_CONST  0b00101
 #define TAG_AST_REF    0b00111
 #define TAG_AST_BINOP  0b01001

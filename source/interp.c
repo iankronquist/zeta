@@ -18,6 +18,37 @@ typedef struct
 
 } frame_t;
 
+/// Evaluate the boolean value of a value
+bool eval_truth(value_t value)
+{
+    switch (value.tag)
+    {
+        case TAG_FALSE:
+        return false;
+
+        case TAG_TRUE:
+        return true;
+
+        case TAG_INT64:
+        return value.word.int64 != 0;
+
+        case TAG_FLOAT64:
+        return value.word.float64 != 0;
+
+        case TAG_RAW_PTR:
+        return value.word.heapptr != 0;
+
+        case TAG_STRING:
+        return ((string_t*)value.word.heapptr)->len > 0;
+
+        case TAG_ARRAY:
+        return ((array_t*)value.word.heapptr)->len > 0;
+
+        default:
+        return true;
+    }
+}
+
 value_t eval_expr(heapptr_t expr)
 {
     // Switch on the expression's tag
@@ -88,7 +119,7 @@ value_t eval_expr(heapptr_t expr)
 
             value_t t = eval_expr(ifexpr->test_expr);
 
-            if (t.tag != TAG_FALSE)
+            if (eval_truth(t))
                 return eval_expr(ifexpr->then_expr);
             else
                 return eval_expr(ifexpr->else_expr);
@@ -233,6 +264,10 @@ void test_interp()
     test_eval_int("if true then 1 else 0", 1);
     test_eval_int("if false then 1 else 0", 0);
     test_eval_int("if 0 < 10 then 7 else 3", 7);
+    test_eval_int("if 0 then 1 else 0", 0);
+    test_eval_int("if 1 then 777", 777);
+    test_eval_int("if 'abc' then 777", 777);
+    test_eval_int("if '' then 777 else 0", 0);
 
 
 
