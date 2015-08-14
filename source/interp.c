@@ -110,6 +110,24 @@ value_t eval_expr(heapptr_t expr)
                 return (memcmp(&v0, &v1, sizeof(v0)) == 0)? VAL_TRUE:VAL_FALSE;
             if (binop->op == &OP_NE)
                 return (memcmp(&v0, &v1, sizeof(v0)) != 0)? VAL_TRUE:VAL_FALSE;
+
+            assert (false);
+        }
+
+        // Unary operator (e.g.: -x, not a)
+        case TAG_AST_UNOP:
+        {
+            ast_unop_t* binop = (ast_unop_t*)expr;
+
+            value_t v0 = eval_expr(binop->expr);
+
+            if (binop->op == &OP_NEG)
+                return value_from_int64(-v0.word.int64);
+
+            if (binop->op == &OP_NOT)
+                return eval_truth(v0)? VAL_FALSE:VAL_TRUE;
+
+            assert (false);
         }
 
         // If expression
@@ -251,6 +269,12 @@ void test_interp()
     test_eval_true("true");
     test_eval_false("false");
 
+    // Arithmetic
+    test_eval_int("3 + 2 * 5", 13);
+    test_eval_int("-7", -7);
+    test_eval_int("-(7 + 3)", -10);
+    test_eval_int("3 + -2 * 5", -7);
+
     // Comparisons
     test_eval_true("0 < 5");
     test_eval_true("0 <= 5");
@@ -268,8 +292,7 @@ void test_interp()
     test_eval_int("if 1 then 777", 777);
     test_eval_int("if 'abc' then 777", 777);
     test_eval_int("if '' then 777 else 0", 0);
-
-
+    test_eval_int("if not true then 1 else 0", 0);
 
 
 
