@@ -630,9 +630,8 @@ heapptr_t parse_atom(input_t* input)
         if (endFloat > endInt)
         {
             input->idx += endFloat - numStart;
-
-            // TODO
-            printf("float value!\n");
+            value_t value = { floatVal, TAG_FLOAT64 };
+            return (heapptr_t)ast_const_alloc(value);
         }
 
         input->idx += endFloat - numStart;
@@ -922,6 +921,8 @@ void test_parser()
     test_parse_expr("123");
     test_parse_expr("0xFF");
     test_parse_expr("0b101");
+    test_parse_expr("1.5");
+    test_parse_expr("10e5");
     test_parse_expr("'abc'");
     test_parse_expr("'hi' // comment");
     test_parse_expr("'hi'");

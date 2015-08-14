@@ -16,8 +16,9 @@ typedef uint64_t tag_t;
 #define TAG_FALSE      0b00000
 #define TAG_TRUE       0b00010
 #define TAG_INT64      0b00100
-#define TAG_STRING     0b00110
-#define TAG_ARRAY      0b01000
+#define TAG_FLOAT64    0b00110
+#define TAG_STRING     0b01000
+#define TAG_ARRAY      0b01010
 #define TAG_OBJECT     0b00001
 #define TAG_CLOS       0b00011
 #define TAG_RAW_PTR    0b00100
