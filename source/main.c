@@ -84,6 +84,12 @@ char* read_line()
 
 int main(int argc, char** argv)
 {
+    printf("Please note that the Zeta VM is at the early prototype ");
+    printf("stage, language semantics and implementation details will ");
+    printf("change often.\n");
+    printf("\n");
+    printf("Zeta Read-Eval-Print Loop (REPL). Press Ctrl+C to exit.\n");
+
     vm_init();
 
     // Test mode
