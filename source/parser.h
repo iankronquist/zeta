@@ -138,6 +138,18 @@ typedef struct
 } ast_binop_t;
 
 /**
+Sequence or block of expressions
+*/
+typedef struct
+{
+    tag_t tag;
+
+    // List of expressions
+    array_t* expr_list;
+
+} ast_seq_t;
+
+/**
 If expression AST node
 */
 typedef struct

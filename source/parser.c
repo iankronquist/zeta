@@ -205,6 +205,19 @@ heapptr_t ast_unop_alloc(
     return (heapptr_t)node;
 }
 
+/// Allocate an sequence expression node
+heapptr_t ast_seq_alloc(
+    array_t* expr_list
+)
+{
+    ast_seq_t* node = (ast_seq_t*)vm_alloc(
+        sizeof(ast_seq_t),
+        TAG_AST_SEQ
+    );
+    node->expr_list = expr_list;
+    return (heapptr_t)node;
+}
+
 /// Allocate an if expression node
 heapptr_t ast_if_alloc(
     heapptr_t test_expr,
@@ -375,7 +388,7 @@ heapptr_t parse_if_expr(input_t* input)
 /**
 Parse a list of expressions
 */
-array_t* parse_expr_list(input_t* input, char endCh, bool identList)
+array_t* parse_expr_list(input_t* input, char endCh, bool identList, bool needSep)
 {
     // Allocate an array with an initial capacity
     array_t* arr = array_alloc(4);
@@ -413,8 +426,8 @@ array_t* parse_expr_list(input_t* input, char endCh, bool identList)
             break;
         }
 
-        // If this is not the first element, there must be a comma
-        if (!input_match_ch(input, ','))
+        // If this is not the first element, there must be a separator
+        if (needSep && !input_match_ch(input, ','))
         {
             input->error_str = "expected comma separator in list";
             return NULL;
@@ -437,7 +450,7 @@ heapptr_t parse_fun_expr(input_t* input)
         return NULL;
     }
 
-    array_t* param_list = parse_expr_list(input, ')', true);
+    array_t* param_list = parse_expr_list(input, ')', true, true);
 
     if (param_list == NULL)
     {
@@ -664,7 +677,7 @@ heapptr_t parse_atom(input_t* input)
     // Array literal
     if (input_match_ch(input, '['))
     {
-        return (heapptr_t)parse_expr_list(input, ']', false);
+        return (heapptr_t)parse_expr_list(input, ']', false, true);
     }
 
     // Parenthesized expression
@@ -683,6 +696,12 @@ heapptr_t parse_atom(input_t* input)
         }
 
         return expr;
+    }
+
+    // Sequence/block expression (i.e { a; b; c }
+    if (input_match_ch(input, '{'))
+    {
+        return ast_seq_alloc(parse_expr_list(input, '}', false, false));
     }
 
     // Try matching a right-associative (prefix) unary operators
@@ -720,7 +739,7 @@ heapptr_t parse_atom(input_t* input)
     }
 
     // Identifiers beginning with non-alphanumeric characters
-    if (input_peek_ch(input) == '_' || 
+    if (input_peek_ch(input) == '_' ||
         input_peek_ch(input) == '$' ||
         isalnum(input_peek_ch(input)))
     {
@@ -793,7 +812,7 @@ heapptr_t parse_expr_prec(input_t* input, int minPrec)
         if (op == &OP_CALL)
         {
             // Parse the argument list and create the call expression
-            array_t* arg_exprs = parse_expr_list(input, ')', false);
+            array_t* arg_exprs = parse_expr_list(input, ')', false, true);
 
             lhs_expr = ast_call_alloc(lhs_expr, arg_exprs);
         }
@@ -1045,5 +1064,11 @@ void test_parser()
 
     // Fibonacci
     test_parse_expr("fib = fun (n) if n < 2 then n else fib(n-1) + fib(n-2)");
+
+    // Sequence/block expression
+    test_parse_expr("{ a b }");
+    test_parse_expr("fun (x) { println(x) println(y) }");
+    test_parse_expr("if (x) then { println(x) } else { println(y) z }");
+    test_parse_expr_fail("{ a, b }");
 }
 

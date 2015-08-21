@@ -10,34 +10,33 @@ typedef uint8_t* heapptr_t;
 /// Value tag (and object header)
 typedef uint64_t tag_t;
 
-// FIXME: does it actually make sense to have an object tag (TAG_OBJECT)?
-// tags as shape node indices
-// do we even care to distinguish between object and non-object?
-// object vs non-object tells us if its a reference or not, is this important?
-
 /// Non-object value tags
-/// Note: non-object values have the least bit set to zero
 /// Note: the boolean false has tag zero
-#define TAG_FALSE       0b00000
-#define TAG_TRUE        0b00010
-#define TAG_INT64       0b00100
-#define TAG_FLOAT64     0b00110
-#define TAG_STRING      0b01000
-#define TAG_ARRAY       0b01010
-#define TAG_RAW_PTR     0b01100
+#define TAG_FALSE       0
+#define TAG_TRUE        1
+#define TAG_INT64       2
+#define TAG_FLOAT64     3
+#define TAG_STRING      4
+#define TAG_ARRAY       5
+#define TAG_RAW_PTR     6
+
+// FIXME: does it make sense for object to have a tag of its own?
+// Probably, the empty object should have a fixed tag?
+// We may want to auto-assign the following tags by building shape nodes
 
 /// Object value tags
 /// Note: object values have the least bit set to one
-#define TAG_OBJECT      0b00001
-#define TAG_CLOS        0b00011
-#define TAG_AST_CONST   0b00101
-#define TAG_AST_REF     0b00111
-#define TAG_AST_BINOP   0b01001
-#define TAG_AST_UNOP    0b00011
-#define TAG_AST_IF      0b01101
-#define TAG_AST_CALL    0b01111
-#define TAG_AST_FUN     0b10001
-#define TAG_RUN_ERR     0b10011
+#define TAG_OBJECT      7
+#define TAG_CLOS        8
+#define TAG_AST_CONST   9
+#define TAG_AST_REF     10
+#define TAG_AST_BINOP   11
+#define TAG_AST_UNOP    12
+#define TAG_AST_SEQ     13
+#define TAG_AST_IF      13
+#define TAG_AST_CALL    15
+#define TAG_AST_FUN     16
+#define TAG_RUN_ERR     17
 
 /// Initial VM heap size
 #define HEAP_SIZE (1 << 24)

@@ -82,7 +82,7 @@ char* read_line()
     return buf;
 }
 
-int main(int argc, char** argv)
+void run_repl()
 {
     printf("Please note that the Zeta VM is at the early prototype ");
     printf("stage, language semantics and implementation details will ");
@@ -90,6 +90,52 @@ int main(int argc, char** argv)
     printf("\n");
     printf("Zeta Read-Eval-Print Loop (REPL). Press Ctrl+C to exit.\n");
 
+    for (;;)
+    {
+        printf("z> ");
+
+        char* cstr = read_line();
+
+        // Evaluate the code string
+        value_t value = eval_str(cstr);
+
+        free(cstr);
+
+        switch (value.tag)
+        {
+            case TAG_FALSE:
+            printf("false\n");
+            break;
+
+            case TAG_TRUE:
+            printf("true\n");
+            break;
+
+            case TAG_INT64:
+            printf("%ld\n", value.word.int64);
+            break;
+
+            case TAG_STRING:
+            {
+                putchar('\'');
+                string_print((string_t*)value.word.heapptr);
+                puts("'");
+            }
+            break;
+
+            case TAG_ARRAY:
+            printf("array\n");
+            break;
+
+            default:
+            printf("unknown value tag\n");
+            break;
+        }
+    }
+}
+
+int main(int argc, char** argv)
+{
     vm_init();
 
     // Test mode
@@ -114,51 +160,10 @@ int main(int argc, char** argv)
         free(cstr);
     }
 
-    // Read-eval-print loop
-    if (argc == 1 /*|| "--e"*/)
+    // No file names passed. Read-eval-print loop.
+    if (argc == 1)
     {
-        for (;;)
-        {
-            printf("z> ");
-
-            char* cstr = read_line();
-
-            // Evaluate the code string
-            value_t value = eval_str(cstr);
-
-            free(cstr);
-
-            switch (value.tag)
-            {
-                case TAG_FALSE:
-                printf("false\n");
-                break;
-
-                case TAG_TRUE:
-                printf("true\n");
-                break;
-
-                case TAG_INT64:
-                printf("%ld\n", value.word.int64);
-                break;
-
-                case TAG_STRING:
-                {
-                    putchar('\'');
-                    string_print((string_t*)value.word.heapptr);
-                    puts("'");
-                }
-                break;
-
-                case TAG_ARRAY:
-                printf("array\n");
-                break;
-
-                default:
-                printf("unknown value tag\n");
-                break;
-            }
-        }
+        run_repl();
     }
 
     return 0;

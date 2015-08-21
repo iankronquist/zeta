@@ -17,7 +17,7 @@ design.
 
 Requirements:
 
-- A C compiler
+- A C compiler, GCC recommended (clang untested)
 
 - GNU make
 
@@ -69,13 +69,14 @@ not part of the core language. The advantage here is that the core VM will not
 need to know anything about things such as regular expressions, and multiple
 competing regular expression packages can be implemented for Zeta.
 
-Here is an example snippet of what Zeta code might look like
+Here is an example snippet of what Zeta code might look like:
 
 ```
-// Load the IO module
-io = import('io');
+// Load/import the standard IO module
+// Modules are simple objects with properties
+io = import('io')
 
-io.println('This is a small Zeta script');
+io.println('This is an example Zeta script');
 
 // Fibonacci function
 fib = fun (n) if n < 1 then n else fib(n-1) + fib(n-1)
@@ -83,11 +84,21 @@ fib = fun (n) if n < 1 then n else fib(n-1) + fib(n-1)
 /* Compute the meaning of life and print out the answer */
 io.println(fib(42))
 
-foo = fun ()
+foo = fun (n)
 {
-    io.println('it is also possible to execute expressions in sequence')
-    io.println('inside blocks with curly braces')
-    io.println('semicolons can be used in ambiguous cases');
+    io.println('It is also possible to execute expressions in sequence');
+    io.println('inside blocks with curly braces.');
+
+    // Since we have parenthesized expressions, we could almost pretend
+    // This is JavaScript code, except for the lack of semicolons
+    if (n < 1) then
+    {
+        io.println('n is less than 1')
+    }
+    else
+    {
+        io.println('n is greater than or equal to 1')
+    }
 
     // Local variables are declared by directly assignong to them
     x = 7 + 1
@@ -112,9 +123,11 @@ foo = fun ()
     // have evaluated
 }
 
-// Make the fib and foo functions available to other modules
-exports.fib = fib;
-exports.foo = foo;
+// Make the fib and foo functions available to other modules.
+// If anyone imports this module, they will be getting a reference
+// To the "exports" object we are writing to here:
+exports.fib = fib
+exports.foo = foo
 ```
 
 Everything is still in flux. Your comments on the syntax and above
@@ -131,10 +144,10 @@ I've chosen to implement the VM core in pure C (not C++), for the following reas
 - To maximize portability. GCC is available on almost every platform in existence.
 
 An important goal of the Zeta VM is that it should be easy to build on both
-Mac and Linux with minimal dependencies. It shouldn't require any special libraries
+Mac and Linux with minimal dependencies. It shouldn't require any extra dependencies
 to run out of the box. You may need to install libraries to use graphical capabilities
 and such, but the core VM will built with only a C compiler installed on your
-machine.
+machine. Zeta must always be easy to install and get started with.
 
 The zeta implementation will be largely [self-hosted](https://en.wikipedia.org/wiki/Self-hosting).
 The core VM will implement an interpreter in C, but the garbage collector and zeta JIT
