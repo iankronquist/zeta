@@ -100,7 +100,7 @@ foo = fun (n)
         io.println('n is greater than or equal to 1')
     }
 
-    // Local variables are declared by directly assignong to them
+    // Local variables are declared by directly assigning to them
     x = 7 + 1
 
     /*
