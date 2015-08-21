@@ -5,9 +5,13 @@ This is an implementation of a Virtual Machine (VM) for the zeta programming
 language I'm working on in my spare time. Zeta draws inspiration from LISP,
 Smalltalk, ML, Python, JavaScript and C. The language is currently at the early
 prototype stage, meaning the syntax and semantics are likely to change a lot
-in the coming months. At the moment, this platform and language is mostly of
-interest to tinkerers and those with a special interest in compilers or
-language design.
+in the coming months.
+
+At the moment, this platform and language is mostly of interest to tinkerers
+and those with a special interest in compilers or language design. It's still
+much too early to talk about adoption and long term goals. I'll be happy if
+this project can help me and others learn more about language and compiler
+design.
 
 ## Quickstart
 
@@ -113,7 +117,8 @@ exports.fib = fib;
 exports.foo = foo;
 ```
 
-Everything is still in flux, so comments are welcome.
+Everything is still in flux. Your comments on the syntax and above
+example are welcome.
 
 ## Zeta VM
 
