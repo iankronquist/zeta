@@ -84,11 +84,15 @@ char* read_line()
 
 void run_repl()
 {
+    printf("Zeta Read-Eval-Print Loop (REPL). Press Ctrl+C to exit.\n");
+    printf("\n");
     printf("Please note that the Zeta VM is at the early prototype ");
     printf("stage, language semantics and implementation details will ");
     printf("change often.\n");
     printf("\n");
-    printf("Zeta Read-Eval-Print Loop (REPL). Press Ctrl+C to exit.\n");
+    printf("NOTE: the interpreter is currently *very much incomplete*. It will ");
+    printf("likely crash on you or give cryptic error messages.\n");
+    printf("\n");
 
     for (;;)
     {
