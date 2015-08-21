@@ -31,11 +31,13 @@ Planned features of the zeta programming language include:
 
 - Dynamic typing
 
-- Dynamically extensible objects, as in JavaScript
+- Dynamically extensible objects with prototypal inheritance, as in JavaScript
 
 - Garbage collection
 
 - A user-extensible grammar, giving programmers the ability to define new syntactic constructs
+
+- Operator overloading, to allow defining new types that behave like native types
 
 - No distinction between statements and expression, everything is an expression, as in LISP
 
@@ -45,15 +47,17 @@ Planned features of the zeta programming language include:
 
 - An easy to use canvas library to render simple 2D graphics
 
+- The ability to suspend and resume running programs
+
 ## Zeta VM
 
-I've chosen to implement the VM core in pure C, for the following reasons:
+I've chosen to implement the VM core in pure C (not C++), for the following reasons:
 
 - To make low-level details explicit (for instance, the layout of hosted objects in memory)
 
 - To avoid hidden sources of overhead
 
-- To avoid dependence on non-portable tools and languages. GCC is available on almost every platform in existence
+- To maximize portability. GCC is available on almost every platform in existence.
 
 The zeta implementation will be largely [self-hosted](https://en.wikipedia.org/wiki/Self-hosting).
 The core VM will implement an interpreter in C, but the garbage collector and zeta JIT

@@ -350,6 +350,7 @@ heapptr_t parse_if_expr(input_t* input)
     input_eat_ws(input);
     if (!input_match_str(input, "then"))
     {
+        input->error_str = "expected 'then' keyword";
         return NULL;
     }
 
@@ -415,8 +416,7 @@ array_t* parse_expr_list(input_t* input, char endCh, bool identList)
         // If this is not the first element, there must be a comma
         if (!input_match_ch(input, ','))
         {
-            // TODO: return a parse error node
-            // all the way to the top?
+            input->error_str = "expected comma separator in list";
             return NULL;
         }
     }
@@ -432,7 +432,10 @@ heapptr_t parse_fun_expr(input_t* input)
 {
     input_eat_ws(input);
     if (!input_match_ch(input, '('))
+    {
+        input->error_str = "expected parameter list";
         return NULL;
+    }
 
     array_t* param_list = parse_expr_list(input, ')', true);
 
@@ -467,7 +470,7 @@ const opinfo_t OP_NOT = { "not", NULL, 1, 13, 'r', false };
 /// Binary arithmetic operators
 const opinfo_t OP_MUL = { "*", NULL, 2, 12, 'l', false };
 const opinfo_t OP_DIV = { "/", NULL, 2, 12, 'l', true };
-const opinfo_t OP_MOD = { "%", NULL, 2, 12, 'l', true };
+const opinfo_t OP_MOD = { "mod", NULL, 2, 12, 'l', true };
 const opinfo_t OP_ADD = { "+", NULL, 2, 11, 'l', false };
 const opinfo_t OP_SUB = { "-", NULL, 2, 11, 'l', true };
 
@@ -476,6 +479,7 @@ const opinfo_t OP_LT = { "<", NULL, 2, 9, 'l', false };
 const opinfo_t OP_LE = { "<=", NULL, 2, 9, 'l', false };
 const opinfo_t OP_GT = { ">", NULL, 2, 9, 'l', false };
 const opinfo_t OP_GE = { ">=", NULL, 2, 9, 'l', false };
+const opinfo_t OP_IN = { "in", NULL, 2, 9, 'l', false };
 
 /// Equality comparison
 const opinfo_t OP_EQ = { "==", NULL, 2, 8, 'l', false };
@@ -532,8 +536,8 @@ const opinfo_t* input_match_op(input_t* input, int minPrec, bool preUnary)
         if (input_match_ch(input, '/'))     op = &OP_DIV;
         break;
 
-        case '%':
-        if (input_match_ch(input, '%'))     op = &OP_MOD;
+        case 'm':
+        if (input_match_str(input, "mod"))  op = &OP_MOD;
         break;
 
         case '+':
@@ -553,6 +557,10 @@ const opinfo_t* input_match_op(input_t* input, int minPrec, bool preUnary)
         case '>':
         if (input_match_str(input, ">="))   op = &OP_GE;
         if (input_match_ch(input, '>'))     op = &OP_GT;
+        break;
+
+        case 'i':
+        if (input_match_str(input, "in"))   op = &OP_IN;
         break;
 
         case '=':
@@ -798,6 +806,7 @@ heapptr_t parse_expr_prec(input_t* input, int minPrec)
 
             if (ident == NULL)
             {
+                input->error_str = "expected identifier in member expression";
                 return NULL;
             }
 
@@ -849,7 +858,7 @@ heapptr_t parse_expr_prec(input_t* input, int minPrec)
         else
         {
             // Unhandled operator
-            printf("unhandled operator\n");
+            printf("operator not handled correctly: %s\n", op->str);
             assert (false);
         }
     }
@@ -925,6 +934,7 @@ void test_parser()
     test_parse_expr("  foo_bar  ");
     test_parse_expr("_foo");
     test_parse_expr("$foo");
+    test_parse_expr("$foo52");
 
     // Literals
     test_parse_expr("123");
@@ -997,6 +1007,7 @@ void test_parser()
     test_parse_expr("if x then y else z");
     test_parse_expr("if x then a+c else d");
     test_parse_expr("if x then a else b");
+    test_parse_expr("if 'a' in b or 'c' in b then y");
     test_parse_expr("if not x then y else z");
     test_parse_expr("if x and not x then true else false");
     test_parse_expr("if x <= 2 then y else z");

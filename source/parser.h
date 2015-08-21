@@ -29,6 +29,9 @@ typedef struct
     /// Current source position
     srcpos_t pos;
 
+    /// Error text, if a parse error was encountered
+    const char* error_str;
+
 } input_t;
 
 /**
@@ -97,6 +100,7 @@ const opinfo_t OP_LT;
 const opinfo_t OP_LE;
 const opinfo_t OP_GT;
 const opinfo_t OP_GE;
+const opinfo_t OP_IN;
 const opinfo_t OP_EQ;
 const opinfo_t OP_NE;
 const opinfo_t OP_BIT_AND;

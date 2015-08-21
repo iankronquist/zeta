@@ -213,8 +213,9 @@ value_t eval_str(char* cstr)
         {
             char buf[64];
             printf(
-                "failed to parse expression, at %s\n",
-                srcpos_to_str(input.pos, buf)
+                "Failed to parse expression %s - %s\n",
+                srcpos_to_str(input.pos, buf),
+                input.error_str
             );
 
             return VAL_FALSE;
