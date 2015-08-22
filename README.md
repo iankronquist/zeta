@@ -123,6 +123,14 @@ foo = fun (n)
     // have evaluated
 }
 
+// This is an object literal
+obj = { x:3, y:5 }
+
+// When declaring a method, the 'this' argument is simply the first
+// function argument, and you can give it the name you want, avoiding all
+// of the JavaScript 'this' issues
+obj.method = fun (this, x) this.x = x
+
 // Make the fib and foo functions available to other modules.
 // If anyone imports this module, they will be getting a reference
 // To the "exports" object we are writing to here:

@@ -1058,6 +1058,7 @@ void test_parser()
     test_parse_expr("fun (x,y,) x");
     test_parse_expr("fun (x,y) x+y");
     test_parse_expr("fun (x,y) if x then y else 0");
+    test_parse_expr("obj.method = fun (this, x) this.x = x");
     test_parse_expr_fail("fun (x,y)");
     test_parse_expr_fail("fun ('x') x");
     test_parse_expr_fail("fun (x+y) y");
