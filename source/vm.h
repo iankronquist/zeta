@@ -47,7 +47,6 @@ Word value type
 typedef union
 {
     int64_t int64;
-
     double float64;
 
     heapptr_t heapptr;
@@ -128,12 +127,11 @@ typedef struct
 
 value_t value_from_heapptr(heapptr_t v);
 value_t value_from_int64(int64_t v);
+void value_print(value_t value);
 
 tag_t get_tag(heapptr_t obj);
 
-/// Initialize the global VM instance
 void vm_init();
-
 heapptr_t vm_alloc(uint32_t size, tag_t tag);
 
 string_t* string_alloc(uint32_t len);
@@ -143,6 +141,8 @@ array_t* array_alloc(uint32_t cap);
 void array_set(array_t* array, uint32_t idx, value_t val);
 void array_set_ptr(array_t* array, uint32_t idx, heapptr_t val);
 value_t array_get(array_t* array, uint32_t idx);
+
+void test_vm();
 
 #endif
 

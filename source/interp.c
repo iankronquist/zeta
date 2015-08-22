@@ -68,9 +68,18 @@ value_t eval_expr(heapptr_t expr)
         // Array literal expression
         case TAG_ARRAY:
         {
-            // TODO: must create new array with evaluated expressions
+            array_t* array_expr = (array_t*)expr;
 
-            assert (false);
+            array_t* val_array = array_alloc(array_expr->len);
+
+            for (size_t i = 0; i < array_expr->len; ++i)
+            {
+                heapptr_t expr = array_get(array_expr, i).word.heapptr;
+                value_t value = eval_expr(expr);
+                array_set(val_array, i, value);
+            }
+
+            return value_from_heapptr((heapptr_t)val_array);
         }
 
         // Binary operator (e.g. a + b)
@@ -111,23 +120,26 @@ value_t eval_expr(heapptr_t expr)
             if (binop->op == &OP_NE)
                 return (memcmp(&v0, &v1, sizeof(v0)) != 0)? VAL_TRUE:VAL_FALSE;
 
-            assert (false);
+            printf("unimplemented binary operator: %s\n", binop->op->str);
+            return VAL_FALSE;
         }
 
         // Unary operator (e.g.: -x, not a)
         case TAG_AST_UNOP:
         {
-            ast_unop_t* binop = (ast_unop_t*)expr;
+            ast_unop_t* unop = (ast_unop_t*)expr;
 
-            value_t v0 = eval_expr(binop->expr);
+            value_t v0 = eval_expr(unop->expr);
 
-            if (binop->op == &OP_NEG)
+            if (unop->op == &OP_NEG)
                 return value_from_int64(-v0.word.int64);
 
-            if (binop->op == &OP_NOT)
+            if (unop->op == &OP_NOT)
                 return eval_truth(v0)? VAL_FALSE:VAL_TRUE;
 
-            assert (false);
+            printf("unimplemented unary operator: %s\n", unop->op->str);
+            return VAL_FALSE;
+
         }
 
         // If expression
@@ -150,42 +162,40 @@ value_t eval_expr(heapptr_t expr)
             heapptr_t fun_expr = callexpr->fun_expr;
             array_t* arg_exprs = callexpr->arg_exprs;
 
-            if (get_tag(fun_expr) == TAG_STRING && arg_exprs->len == 1)
+            if (get_tag(fun_expr) == TAG_AST_REF && arg_exprs->len == 1)
             {
-                string_t* fun_name = (string_t*)fun_expr;
-                char* name_cstr = fun_name->data;
+                ast_ref_t* fun_ident = (ast_ref_t*)fun_expr;
+                char* name_cstr = fun_ident->name_str->data;
 
                 heapptr_t arg_expr = array_get(arg_exprs, 0).word.heapptr;
                 value_t arg_val = eval_expr(arg_expr);
-                string_t* arg_str = (string_t*)arg_val.word.heapptr;
 
-                if (strncmp(name_cstr, "$print_i64", 10) == 0)
+                if (strncmp(name_cstr, "println", strlen("println")) == 0)
                 {
-                    printf("%ld", arg_val.word.int64);
-                    return VAL_TRUE;
-                }
-
-                if (strncmp(name_cstr, "$print_str", 10) == 0)
-                {
-                    string_print(arg_str);
+                    value_print(arg_val);
+                    putchar('\n');
                     return VAL_TRUE;
                 }
             }
 
-            assert (false);
+            printf("eval error, unknown function in call expression\n");
+            return VAL_FALSE;
         }
 
         // Function/closure expression
         case TAG_AST_FUN:
         {
             // For now, return the function unchanged
+            // Later, we will have closure objects
             return value_from_heapptr(expr);
         }
 
         // TODO: use special error value, not accessible to user code
-        // run_error_t
+        // run_error_t?
+        // Wait a bit, unsure if this interpreter should be exposed
+        // to user code
         default:
-        printf("unknown tag=%ld\n", get_tag(expr));
+        printf("eval error, unknown expression, tag=%ld\n", get_tag(expr));
         return VAL_FALSE;
     }
 }
@@ -264,6 +274,7 @@ void test_eval_false(char* cstr)
 void test_interp()
 {
     test_eval_int("0", 0);
+    test_eval_int("1", 1);
     test_eval_int("7", 7);
     test_eval_int("0xFF", 255);
     test_eval_int("0b101", 5);
@@ -282,8 +293,15 @@ void test_interp()
     test_eval_true("0 <= 0");
     test_eval_true("0 == 0");
     test_eval_true("0 != 1");
+    test_eval_true("not false");
+    test_eval_true("not not true");
     test_eval_true("true == true");
     test_eval_false("true == false");
+
+    // Arrays
+    test_eval_int("[7][0]", 7);
+    test_eval_int("[0,1,2][0]", 0);
+    test_eval_int("[7+3][0]", 10);
 
     // If expression
     test_eval_int("if true then 1 else 0", 1);

@@ -54,7 +54,7 @@ typedef struct
     tag_t tag;
 
     /// Identifier name string
-    heapptr_t name_str;
+    string_t* name_str;
 
     /// Local index
     uint32_t idx;

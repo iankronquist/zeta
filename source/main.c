@@ -105,36 +105,9 @@ void run_repl()
 
         free(cstr);
 
-        switch (value.tag)
-        {
-            case TAG_FALSE:
-            printf("false\n");
-            break;
-
-            case TAG_TRUE:
-            printf("true\n");
-            break;
-
-            case TAG_INT64:
-            printf("%ld\n", value.word.int64);
-            break;
-
-            case TAG_STRING:
-            {
-                putchar('\'');
-                string_print((string_t*)value.word.heapptr);
-                puts("'");
-            }
-            break;
-
-            case TAG_ARRAY:
-            printf("array\n");
-            break;
-
-            default:
-            printf("unknown value tag\n");
-            break;
-        }
+        // Print the value
+        value_print(value);
+        putchar('\n');
     }
 }
 
@@ -145,6 +118,7 @@ int main(int argc, char** argv)
     // Test mode
     if (argc == 2 && strcmp(argv[1], "--test") == 0)
     {
+        test_vm();
         test_parser();
         test_interp();
         return 0;

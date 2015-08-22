@@ -168,7 +168,8 @@ heapptr_t ast_ref_alloc(heapptr_t name_str)
         sizeof(ast_ref_t),
         TAG_AST_REF
     );
-    node->name_str = name_str;
+    assert (get_tag(name_str) == TAG_STRING);
+    node->name_str = (string_t*)name_str;
     node->idx = 0xFFFFFFFF;
     return (heapptr_t)node;
 }
@@ -297,9 +298,46 @@ heapptr_t parse_ident(input_t* input)
 }
 
 /**
+Parse a number (integer or floating-point)
+Note: floating-point numbers are not supported by the core parser
+*/
+heapptr_t parse_number(input_t* input)
+{
+    char* numStart;
+
+    int64_t intVal;
+
+    char* endInt = NULL;
+
+    // Hexadecimal literals
+    if (input_match_str(input, "0x"))
+    {
+        numStart = input->str->data + input->idx;
+        intVal = strtol(numStart, &endInt, 16);
+    }
+
+    // Binary literals
+    else if (input_match_str(input, "0b"))
+    {
+        numStart = input->str->data + input->idx;
+        intVal = strtol(numStart, &endInt, 2);
+    }
+
+    // Decimal literals
+    else
+    {
+        numStart = input->str->data + input->idx;
+        intVal = strtol(numStart, &endInt, 10);
+    }
+
+    input->idx += endInt - numStart;
+    return (heapptr_t)ast_const_alloc(value_from_int64(intVal));
+}
+
+/**
 Parse a string value
 */
-heapptr_t parse_str(input_t* input)
+heapptr_t parse_string(input_t* input, char endCh)
 {
     size_t len = 0;
     size_t cap = 64;
@@ -312,7 +350,7 @@ heapptr_t parse_str(input_t* input)
         char ch = input_read_ch(input);
 
         // If this is the end of the string
-        if (ch == '\'')
+        if (ch == endCh)
         {
             break;
         }
@@ -325,7 +363,9 @@ heapptr_t parse_str(input_t* input)
             switch (esc)
             {
                 case 'n': ch = '\n'; break;
+                case 'r': ch = '\r'; break;
                 case 't': ch = '\t'; break;
+                case '0': ch = '\0'; break;
 
                 default:
                 return NULL;
@@ -626,52 +666,17 @@ heapptr_t parse_atom(input_t* input)
     // Numerical constant
     if (isdigit(input_peek_ch(input)))
     {
-        char* numStart = NULL;
-        char* endInt = NULL;
-        char* endFloat = NULL;
-
-        int64_t intVal;
-        double floatVal;
-
-        // Hexadecimal literals
-        if (input_match_str(input, "0x"))
-        {
-            numStart = input->str->data + input->idx;
-            intVal = strtol(numStart, &endInt, 16);
-        }
-
-        // Binary literals
-        else if (input_match_str(input, "0b"))
-        {
-            numStart = input->str->data + input->idx;
-            intVal = strtol(numStart, &endInt, 2);
-        }
-
-        // Decimal literals
-        else
-        {
-            // Try parsing both as an integer and floating-point value
-            numStart = input->str->data + input->idx;
-            intVal = strtol(numStart, &endInt, 10);
-            floatVal = strtod(numStart, &endFloat);
-        }
-
-        // If the floating-point parse recognized more characters
-        if (endFloat > endInt)
-        {
-            input->idx += endFloat - numStart;
-            value_t value = { floatVal, TAG_FLOAT64 };
-            return (heapptr_t)ast_const_alloc(value);
-        }
-
-        input->idx += endFloat - numStart;
-        return (heapptr_t)ast_const_alloc(value_from_int64(intVal));
+        return parse_number(input);
     }
 
     // String literal
     if (input_match_ch(input, '\''))
     {
-        return parse_str(input);
+        return parse_string(input, '\'');
+    }
+    if (input_match_ch(input, '"'))
+    {
+        return parse_string(input, '"');
     }
 
     // Array literal
@@ -959,9 +964,9 @@ void test_parser()
     test_parse_expr("123");
     test_parse_expr("0xFF");
     test_parse_expr("0b101");
-    test_parse_expr("1.5");
-    test_parse_expr("10e5");
     test_parse_expr("'abc'");
+    test_parse_expr("\"double-quoted string!\"");
+    test_parse_expr("\"double-quoted string, 'hi'!\"");
     test_parse_expr("'hi' // comment");
     test_parse_expr("'hi'");
     test_parse_expr("'new\\nline'");

@@ -31,6 +31,58 @@ value_t value_from_int64(int64_t v)
 }
 
 /**
+Print a value to standard output
+*/
+void value_print(value_t value)
+{
+    switch (value.tag)
+    {
+        case TAG_FALSE:
+        printf("false");
+        break;
+
+        case TAG_TRUE:
+        printf("true");
+        break;
+
+        case TAG_INT64:
+        printf("%ld", value.word.int64);
+        break;
+
+        case TAG_FLOAT64:
+        printf("%lf", value.word.float64);
+        break;
+
+        case TAG_STRING:
+        {
+            putchar('"');
+            string_print((string_t*)value.word.heapptr);
+            putchar('"');
+        }
+        break;
+
+        case TAG_ARRAY:
+        {
+            array_t* array = (array_t*)value.word.heapptr;
+
+            putchar('[');
+            for (size_t i = 0; i < array->len; ++i)
+            {
+                value_print(array_get(array, i));
+                if (i + 1 < array->len)
+                    printf(", ");
+            }
+            putchar(']');
+        }
+        break;
+
+        default:
+        printf("unknown value tag");
+        break;
+    }
+}
+
+/**
 Get the tag for a heap object
 */
 tag_t get_tag(heapptr_t obj)
@@ -109,7 +161,7 @@ array_t* array_alloc(uint32_t cap)
 {
     // Note: the heap is zeroed out on allocation
     array_t* arr = (array_t*)vm_alloc(
-        sizeof(array_t) + cap * sizeof(word_t),
+        sizeof(array_t) + cap * sizeof(value_t),
         TAG_ARRAY
     );
 
@@ -122,7 +174,6 @@ array_t* array_alloc(uint32_t cap)
 void array_set_length(array_t* array, uint32_t len)
 {
     assert (len <= array->cap);
-
     array->len = len;
 }
 
@@ -139,14 +190,19 @@ void array_set_ptr(array_t* array, uint32_t idx, heapptr_t ptr)
     assert (ptr != NULL);
     value_t val_pair;
     val_pair.word.heapptr = ptr;
-    val_pair.tag = *(tag_t*)ptr;
+    val_pair.tag = get_tag(ptr);
     array_set(array, idx, val_pair);
 }
 
 value_t array_get(array_t* array, uint32_t idx)
 {
     assert (idx < array->len);
-
     return array->elems[idx];
+}
+
+void test_vm()
+{
+    assert (sizeof(word_t) == 8);
+    assert (sizeof(value_t) == 16);
 }
 

@@ -35,21 +35,23 @@ Planned features of the zeta programming language include:
 
 - Dynamic typing
 
+- Garbage collection
+
+- Separate integer and floating-point types (both 64-bit)
+
 - Dynamically extensible objects with prototypal inheritance, as in JavaScript
 
-- Garbage collection
+- No distinction between statements and expression, everything is an expression, as in LISP
 
 - A user-extensible grammar, giving programmers the ability to define new syntactic constructs
 
 - Operator overloading, to allow defining new types that behave like native types
 
-- No distinction between statements and expression, everything is an expression, as in LISP
-
 - Functional constructs such as map and foreach
 
 - A module system
 
-- An easy to use canvas library to render simple 2D graphics
+- A very easy to use canvas library to render simple 2D graphics and make simple UIs
 
 - The ability to suspend and resume running programs
 
@@ -74,9 +76,9 @@ Here is an example snippet of what Zeta code might look like:
 ```
 // Load/import the standard IO module
 // Modules are simple objects with properties
-io = import('io')
+io = import("io")
 
-io.println('This is an example Zeta script');
+io.println("This is an example Zeta script");
 
 // Fibonacci function
 fib = fun (n) if n < 1 then n else fib(n-1) + fib(n-1)
@@ -86,25 +88,25 @@ io.println(fib(42))
 
 foo = fun (n)
 {
-    io.println('It is also possible to execute expressions in sequence');
-    io.println('inside blocks with curly braces.');
+    io.println("It's also possible to execute expressions in sequence");
+    io.println("inside blocks with curly braces.");
 
     // Since we have parenthesized expressions, we could almost pretend
     // This is JavaScript code, except for the lack of semicolons
     if (n < 1) then
     {
-        io.println('n is less than 1')
+        io.println("n is less than 1")
     }
     else
     {
-        io.println('n is greater than or equal to 1')
+        io.println("n is greater than or equal to 1")
     }
 
     // Local variables are declared by directly assigning to them
     x = 7 + 1
 
     /*
-    The variable 'unit' refers to this script or code unit, the scope of
+    The variable "unit" refers to this script or code unit, the scope of
     this unit is an object. To assign to the global scope, we need to do
     the following:
     */
@@ -126,9 +128,9 @@ foo = fun (n)
 // This is an object literal
 obj = { x:3, y:5 }
 
-// When declaring a method, the 'this' argument is simply the first
+// When declaring a method, the "this" argument is simply the first
 // function argument, and you can give it the name you want, avoiding all
-// of the JavaScript 'this' issues
+// of the JavaScript "this" issues
 obj.method = fun (this, x) this.x = x
 
 // Make the fib and foo functions available to other modules.
