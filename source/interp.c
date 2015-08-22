@@ -142,6 +142,25 @@ value_t eval_expr(heapptr_t expr)
 
         }
 
+        // Sequence/block expression
+        case TAG_AST_SEQ:
+        {
+            ast_seq_t* seqexpr = (ast_seq_t*)expr;
+            array_t* expr_list = seqexpr->expr_list;
+
+            value_t value;
+
+            for (size_t i = 0; i < expr_list->len; ++i)
+            {
+                heapptr_t expr = array_get(expr_list, i).word.heapptr;
+                value = eval_expr(expr);
+            }
+
+            // Return the value of the last expression
+            return value;
+        }
+        break;
+
         // If expression
         case TAG_AST_IF:
         {
@@ -302,6 +321,10 @@ void test_interp()
     test_eval_int("[7][0]", 7);
     test_eval_int("[0,1,2][0]", 0);
     test_eval_int("[7+3][0]", 10);
+
+    // Sequence expression
+    test_eval_int("{ 2 3 }", 3);
+    test_eval_int("{ 2 3+7 }", 10);
 
     // If expression
     test_eval_int("if true then 1 else 0", 1);

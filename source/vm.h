@@ -33,7 +33,7 @@ typedef uint64_t tag_t;
 #define TAG_AST_BINOP   11
 #define TAG_AST_UNOP    12
 #define TAG_AST_SEQ     13
-#define TAG_AST_IF      13
+#define TAG_AST_IF      14
 #define TAG_AST_CALL    15
 #define TAG_AST_FUN     16
 #define TAG_RUN_ERR     17
