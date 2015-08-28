@@ -3,12 +3,17 @@
 
 #include <stdlib.h>
 #include <stdint.h>
+#include <stdbool.h>
 
 /// Heap object pointer
 typedef uint8_t* heapptr_t;
 
 /// Value tag (and object header)
-typedef uint64_t tag_t;
+typedef uint32_t tag_t;
+
+// FIXME: does it make sense for object to have a tag of its own?
+// Probably, the empty object should have a fixed tag?
+// We may want to auto-assign the following tags by building shape nodes
 
 /// Non-object value tags
 /// Note: the boolean false has tag zero
@@ -19,13 +24,6 @@ typedef uint64_t tag_t;
 #define TAG_STRING      4
 #define TAG_ARRAY       5
 #define TAG_RAW_PTR     6
-
-// FIXME: does it make sense for object to have a tag of its own?
-// Probably, the empty object should have a fixed tag?
-// We may want to auto-assign the following tags by building shape nodes
-
-/// Object value tags
-/// Note: object values have the least bit set to one
 #define TAG_OBJECT      7
 #define TAG_CLOS        8
 #define TAG_AST_CONST   9
@@ -41,6 +39,12 @@ typedef uint64_t tag_t;
 /// Initial VM heap size
 #define HEAP_SIZE (1 << 24)
 
+// Forward declarations
+typedef struct array array_t;
+typedef struct string string_t;
+typedef struct shape shape_t;
+typedef struct object object_t;
+
 /**
 Word value type
 */
@@ -50,6 +54,10 @@ typedef union
     double float64;
 
     heapptr_t heapptr;
+
+    array_t* array;
+    string_t* string;
+    object_t* object;
 
     tag_t tag;
 
@@ -75,23 +83,25 @@ Virtual machine
 */
 typedef struct
 {
-    uint8_t* heapStart;
+    uint8_t* heapstart;
 
-    uint8_t* heapLimit;
+    uint8_t* heaplimit;
 
-    uint8_t* allocPtr;
+    uint8_t* allocptr;
 
-    // TODO: global variable slots
-    // use naive lookup for now, linear search
-    // - big array, names and value words
-    // eventually, use global object
+    /// Global object
+    object_t* global;
+
+    array_t* shapetbl;
+
+    array_t* stringtbl;
 
 } vm_t;
 
 /**
 String (heap object)
 */
-typedef struct
+typedef struct string
 {
     tag_t tag;
 
@@ -109,7 +119,7 @@ typedef struct
 /**
 Array (list) heap object
 */
-typedef struct
+typedef struct array
 {
     tag_t tag;
 
@@ -125,9 +135,61 @@ typedef struct
 
 } array_t;
 
+/// Property/object attribute definitions
+#define ATTR_TAG_KNOWN  0b001
+#define ATTR_READ_ONLY  0b010
+#define ATTR_FROZEN     0b100
+
+/*
+Shape node descriptor
+Property tags should immediately follow properties, if unknown
+*/
+typedef struct shape
+{
+    tag_t tag;
+
+    /// Index of this shape node
+    tag_t idx;
+
+    /// Property name
+    string_t* prop_name;
+
+    /// Parent shape
+    tag_t parent;
+
+    /// Property offset, in bytes
+    uint32_t offset;
+
+    /// Type tag, if known
+    tag_t prop_tag;
+
+    /// Property and object attributes
+    uint8_t attrs;
+
+    // TODO: child shapes
+    // KISS for now, just an array
+
+} shape_t;
+
+/**
+Object
+*/
+typedef struct object
+{
+    tag_t tag;
+
+    /// Capacity in bytes
+    uint32_t cap;
+
+    /// Object extension table
+    object_t* ext_tbl;
+
+} object_t;
+
 value_t value_from_heapptr(heapptr_t v);
 value_t value_from_int64(int64_t v);
 void value_print(value_t value);
+bool value_equals(value_t this, value_t that);
 
 tag_t get_tag(heapptr_t obj);
 

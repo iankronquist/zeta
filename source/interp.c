@@ -39,10 +39,10 @@ bool eval_truth(value_t value)
         return value.word.heapptr != 0;
 
         case TAG_STRING:
-        return ((string_t*)value.word.heapptr)->len > 0;
+        return value.word.string->len > 0;
 
         case TAG_ARRAY:
-        return ((array_t*)value.word.heapptr)->len > 0;
+        return value.word.array->len > 0;
 
         default:
         return true;
@@ -209,12 +209,8 @@ value_t eval_expr(heapptr_t expr)
             return value_from_heapptr(expr);
         }
 
-        // TODO: use special error value, not accessible to user code
-        // run_error_t?
-        // Wait a bit, unsure if this interpreter should be exposed
-        // to user code
         default:
-        printf("eval error, unknown expression, tag=%ld\n", get_tag(expr));
+        printf("eval error, unknown expression type, tag=%d\n", get_tag(expr));
         return VAL_FALSE;
     }
 }
@@ -264,7 +260,7 @@ void test_eval(char* cstr, value_t expected)
 {
     value_t value = eval_str(cstr);
 
-    if (memcmp(&value, &expected, sizeof(value)) != 0)
+    if (!value_equals(value, expected))
     {
         printf(
             "value doesn't match expected for input:\n%s\n",

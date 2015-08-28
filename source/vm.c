@@ -30,6 +30,19 @@ value_t value_from_int64(int64_t v)
     return val;
 }
 
+bool value_equals(value_t this, value_t that)
+{
+    if (this.tag != that.tag)
+        return false;
+
+    if (this.word.int64 != that.word.int64)
+        return false;
+
+    // TODO: FP zero handling
+
+    return true;
+}
+
 /**
 Print a value to standard output
 */
@@ -95,9 +108,9 @@ void vm_init()
 {
     // Allocate the hosted heap
     // Note: calloc also zeroes out the heap
-    vm.heapStart = calloc(1, HEAP_SIZE);
-    vm.heapLimit = vm.heapStart + HEAP_SIZE;
-    vm.allocPtr = vm.heapStart;
+    vm.heapstart = calloc(1, HEAP_SIZE);
+    vm.heaplimit = vm.heapstart + HEAP_SIZE;
+    vm.allocptr = vm.heapstart;
 }
 
 /**
@@ -108,22 +121,22 @@ heapptr_t vm_alloc(uint32_t size, tag_t tag)
 {
     assert (size >= sizeof(tag_t));
 
-    size_t availSpace = vm.heapLimit - vm.allocPtr;
+    size_t availspace = vm.heaplimit - vm.allocptr;
 
-    if (availSpace < size)
+    if (availspace < size)
     {
         printf("insufficient heap space\n");
-        printf("availSpace=%ld\n", availSpace);
+        printf("availSpace=%ld\n", availspace);
         exit(-1);
     }
 
-    uint8_t* ptr = vm.allocPtr;
+    uint8_t* ptr = vm.allocptr;
 
     // Increment the allocation pointer
-    vm.allocPtr += size;
+    vm.allocptr += size;
 
     // Align the allocation pointer
-    vm.allocPtr = (uint8_t*)(((ptrdiff_t)vm.allocPtr + 7) & -8);
+    vm.allocptr = (uint8_t*)(((ptrdiff_t)vm.allocptr + 7) & -8);
 
     // Set the object descriptor
     *((tag_t*)ptr) = tag;
