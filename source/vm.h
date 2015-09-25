@@ -56,6 +56,7 @@ typedef union
     string_t* string;
     object_t* object;
 
+    shapeidx_t shapeidx;
     tag_t tag;
 
 } word_t;
@@ -86,12 +87,15 @@ typedef struct
 
     uint8_t* allocptr;
 
-    /// Global object
-    object_t* global;
-
     array_t* shapetbl;
 
     array_t* stringtbl;
+
+    /// Global object
+    object_t* global;
+
+    /// Empty object shape
+    shape_t* empty_shape;
 
 } vm_t;
 
@@ -162,14 +166,17 @@ typedef struct shape
     /// Parent shape index
     shapeidx_t parent;
 
-    /// Slot index for this property
-    uint32_t slot_idx;
+    /// Offset in bytes for this property
+    uint32_t offset;
 
     /// Property value word/tag, if known
     value_t prop_val;
 
     /// Property and object attributes
     uint8_t attrs;
+
+    /// Property/field size in bytes
+    uint8_t size;
 
     /// Child shapes
     /// KISS for now, just an array
@@ -209,6 +216,8 @@ array_t* array_alloc(uint32_t cap);
 void array_set(array_t* array, uint32_t idx, value_t val);
 void array_set_obj(array_t* array, uint32_t idx, heapptr_t val);
 value_t array_get(array_t* array, uint32_t idx);
+
+shape_t* shape_alloc();
 
 void test_vm();
 

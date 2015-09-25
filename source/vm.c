@@ -115,6 +115,12 @@ void vm_init()
     vm.heaplimit = vm.heapstart + HEAP_SIZE;
     vm.allocptr = vm.heapstart;
 
+    // Allocate the shape table
+    vm.shapetbl = array_alloc(4096);
+
+    // Allocate the empty object shape
+    vm.empty_shape = shape_alloc();
+    assert (vm.empty_shape->idx == 0);
 
 
     // TODO: alloc SHAPE_ARRAY
@@ -228,17 +234,46 @@ value_t array_get(array_t* array, uint32_t idx)
     return array->elems[idx];
 }
 
-shape_t* shape_alloc()
+// TODO: probably want to specify the field size
+shape_t* shape_alloc(
+    shapeidx_t parent, 
+    string_t* prop_name
+)
 {
-    shape_t* obj = (shape_t*)vm_alloc(
+    shape_t* shape = (shape_t*)vm_alloc(
         sizeof(shape_t),
         TAG_OBJECT
     );
 
     // Note: shape needs to map to a struct in order to implement this object
 
-    // TODO
-    return NULL;
+    shape->parent = parent;
+
+    shape->prop_name = 0;
+
+    shape->attrs = 0;
+
+    shape->children = NULL;
+
+
+
+    // TODO:
+    // Compute the field offset
+
+
+
+
+
+
+
+
+    // Set the shape index
+    shape->idx = vm.shapetbl->len;
+
+    // Add the shape to the shape table
+    array_set_obj(vm.shapetbl, vm.shapetbl->len, (heapptr_t)shape);
+
+    return shape;
 }
 
 object_t* object_alloc(uint32_t cap)
