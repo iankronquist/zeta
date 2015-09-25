@@ -14,11 +14,17 @@ vm_t vm;
 const value_t VAL_FALSE = { 0, TAG_BOOL };
 const value_t VAL_TRUE = { 1, TAG_BOOL };
 
-value_t value_from_heapptr(heapptr_t v)
+/// Shape of array objects
+shapeidx_t SHAPE_ARRAY;
+
+/// Shape of string objects
+shapeidx_t SHAPE_STRING;
+
+value_t value_from_heapptr(heapptr_t v, tag_t tag)
 {
     value_t val;
     val.word.heapptr = v;
-    val.tag = get_tag(v);
+    val.tag = tag;
     return val; 
 }
 
@@ -95,11 +101,11 @@ void value_print(value_t value)
 }
 
 /**
-Get the tag for a heap object
+Get the shape for a heap object
 */
-tag_t get_tag(heapptr_t obj)
+shapeidx_t get_shape(heapptr_t obj)
 {
-    return *(tag_t*)obj;
+    return *(shapeidx_t*)obj;
 }
 
 /// Initialize the VM
@@ -115,6 +121,7 @@ void vm_init()
 
 
 
+    // TODO: set SHAPE_STRING
 
 
 
@@ -156,7 +163,7 @@ Allocate a string on the hosted heap
 */
 string_t* string_alloc(uint32_t len)
 {
-    string_t* str = (string_t*)vm_alloc(sizeof(string_t) + len, TAG_STRING);
+    string_t* str = (string_t*)vm_alloc(sizeof(string_t) + len, SHAPE_STRING);
 
     str->len = len;
 
@@ -182,7 +189,7 @@ array_t* array_alloc(uint32_t cap)
     // Note: the heap is zeroed out on allocation
     array_t* arr = (array_t*)vm_alloc(
         sizeof(array_t) + cap * sizeof(value_t),
-        TAG_ARRAY
+        SHAPE_ARRAY
     );
 
     arr->cap = cap;
@@ -205,12 +212,12 @@ void array_set(array_t* array, uint32_t idx, value_t val)
     array->elems[idx] = val;
 }
 
-void array_set_ptr(array_t* array, uint32_t idx, heapptr_t ptr)
+void array_set_obj(array_t* array, uint32_t idx, heapptr_t ptr)
 {
     assert (ptr != NULL);
     value_t val_pair;
     val_pair.word.heapptr = ptr;
-    val_pair.tag = get_tag(ptr);
+    val_pair.tag = TAG_OBJECT;
     array_set(array, idx, val_pair);
 }
 

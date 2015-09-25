@@ -6,15 +6,15 @@
 
 /// Shape indices for AST nodes
 /// These are initialized in init_parser(), see parser.c
-extern shapeidx_t TAG_AST_CONST;
-extern shapeidx_t TAG_AST_REF;
-extern shapeidx_t TAG_AST_BINOP;
-extern shapeidx_t TAG_AST_UNOP;
-extern shapeidx_t TAG_AST_SEQ;
-extern shapeidx_t TAG_AST_IF;
-extern shapeidx_t TAG_AST_CALL;
-extern shapeidx_t TAG_AST_FUN;
-extern shapeidx_t TAG_RUN_ERR;
+extern shapeidx_t SHAPE_AST_CONST;
+extern shapeidx_t SHAPE_AST_REF;
+extern shapeidx_t SHAPE_AST_BINOP;
+extern shapeidx_t SHAPE_AST_UNOP;
+extern shapeidx_t SHAPE_AST_SEQ;
+extern shapeidx_t SHAPE_AST_IF;
+extern shapeidx_t SHAPE_AST_CALL;
+extern shapeidx_t SHAPE_AST_FUN;
+extern shapeidx_t SHAPE_RUN_ERR;
 
 /**
 Source position information
@@ -52,7 +52,7 @@ Used for integers, floats and booleans
 */
 typedef struct
 {
-    tag_t tag;
+    shapeidx_t shape;
 
     value_t val;
 
@@ -63,7 +63,7 @@ Variable reference node
 */
 typedef struct
 {
-    tag_t tag;
+    shapeidx_t shape;
 
     /// Identifier name string
     string_t* name_str;
@@ -78,7 +78,7 @@ Variable declaration node
 */
 typedef struct
 {
-    tag_t tag;
+    shapeidx_t shape;
 
     /// Identifier name string
     string_t* name_str;
@@ -143,7 +143,7 @@ Unary operator AST node
 */
 typedef struct
 {
-    tag_t tag;
+    shapeidx_t shape;
 
     const opinfo_t* op;
 
@@ -156,7 +156,7 @@ Binary operator AST node
 */
 typedef struct
 {
-    tag_t tag;
+    shapeidx_t shape;
 
     const opinfo_t* op;
 
@@ -170,7 +170,7 @@ Sequence or block of expressions
 */
 typedef struct
 {
-    tag_t tag;
+    shapeidx_t shape;
 
     // List of expressions
     array_t* expr_list;
@@ -182,7 +182,7 @@ If expression AST node
 */
 typedef struct
 {
-    tag_t tag;
+    shapeidx_t shape;
 
     heapptr_t test_expr;
 
@@ -196,7 +196,7 @@ Function call AST node
 */
 typedef struct
 {
-    tag_t tag;
+    shapeidx_t shape;
 
     /// Function to be called
     heapptr_t fun_expr;
@@ -211,7 +211,7 @@ Function expression node
 */
 typedef struct
 {
-    tag_t tag;
+    shapeidx_t shape;
 
     // List of parameter names (strings)
     array_t* param_names;

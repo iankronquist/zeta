@@ -27,6 +27,12 @@ typedef uint32_t shapeidx_t;
 /// Initial VM heap size
 #define HEAP_SIZE (1 << 24)
 
+/// Shape of array objects
+extern shapeidx_t SHAPE_STRING;
+
+/// Shape of string objects
+extern shapeidx_t SHAPE_STRING;
+
 // Forward declarations
 typedef struct array array_t;
 typedef struct string string_t;
@@ -94,7 +100,7 @@ String (heap object)
 */
 typedef struct string
 {
-    tag_t tag;
+    shapeidx_t shape;
 
     /// String hash
     uint32_t hash;
@@ -112,7 +118,7 @@ Array (list) heap object
 */
 typedef struct array
 {
-    tag_t tag;
+    shapeidx_t shape;
 
     /// Allocated capacity
     uint32_t cap;
@@ -145,7 +151,7 @@ Property tags should immediately follow properties, if unknown
 */
 typedef struct shape
 {
-    tag_t tag;
+    shapeidx_t shape;
 
     /// Index of this shape node
     tag_t shape_idx;
@@ -175,7 +181,7 @@ Object
 */
 typedef struct object
 {
-    tag_t tag;
+    shapeidx_t shape;
 
     /// Capacity in bytes
     uint32_t cap;
@@ -185,12 +191,12 @@ typedef struct object
 
 } object_t;
 
-value_t value_from_heapptr(heapptr_t v);
+value_t value_from_heapptr(heapptr_t v, tag_t tag);
 value_t value_from_int64(int64_t v);
 void value_print(value_t value);
 bool value_equals(value_t this, value_t that);
 
-tag_t get_tag(heapptr_t obj);
+shapeidx_t get_shape(heapptr_t obj);
 
 void vm_init();
 heapptr_t vm_alloc(uint32_t size, shapeidx_t shape);
@@ -200,7 +206,7 @@ void string_print(string_t* str);
 
 array_t* array_alloc(uint32_t cap);
 void array_set(array_t* array, uint32_t idx, value_t val);
-void array_set_ptr(array_t* array, uint32_t idx, heapptr_t val);
+void array_set_obj(array_t* array, uint32_t idx, heapptr_t val);
 value_t array_get(array_t* array, uint32_t idx);
 
 void test_vm();

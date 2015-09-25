@@ -48,11 +48,14 @@ bool eval_truth(value_t value)
 
 value_t eval_expr(heapptr_t expr)
 {
-    // TODO: Get the parent of the AST node object
-
-
     return VAL_FALSE;
 
+
+    // TODO: 
+    // Get the shape of the AST node
+    // AST nodes must match the shapes defined in init_parser,
+    // otherwise this interpreter can't handle it
+    //get_shape
 
     /*
     {
@@ -291,6 +294,7 @@ void test_eval_false(char* cstr)
 
 void test_interp()
 {
+    /*
     test_eval_int("0", 0);
     test_eval_int("1", 1);
     test_eval_int("7", 7);
@@ -334,7 +338,7 @@ void test_interp()
     test_eval_int("if 'abc' then 777", 777);
     test_eval_int("if '' then 777 else 0", 0);
     test_eval_int("if not true then 1 else 0", 0);
-
+    */
 
 
 

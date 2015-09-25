@@ -11,15 +11,15 @@
 
 /// Shape indices for AST nodes
 /// These are initialized in init_parser(), see parser.c
-shapeidx_t TAG_AST_CONST;
-shapeidx_t TAG_AST_REF;
-shapeidx_t TAG_AST_BINOP;
-shapeidx_t TAG_AST_UNOP;
-shapeidx_t TAG_AST_SEQ;
-shapeidx_t TAG_AST_IF;
-shapeidx_t TAG_AST_CALL;
-shapeidx_t TAG_AST_FUN;
-shapeidx_t TAG_RUN_ERR;
+shapeidx_t SHAPE_AST_CONST;
+shapeidx_t SHAPE_AST_REF;
+shapeidx_t SHAPE_AST_BINOP;
+shapeidx_t SHAPE_AST_UNOP;
+shapeidx_t SHAPE_AST_SEQ;
+shapeidx_t SHAPE_AST_IF;
+shapeidx_t SHAPE_AST_CALL;
+shapeidx_t SHAPE_AST_FUN;
+shapeidx_t SHAPE_RUN_ERR;
 
 char* srcpos_to_str(srcpos_t pos, char* buf)
 {
@@ -167,7 +167,7 @@ heapptr_t ast_const_alloc(value_t val)
 {
     ast_const_t* node = (ast_const_t*)vm_alloc(
         sizeof(ast_const_t),
-        TAG_AST_CONST
+        SHAPE_AST_CONST
     );
     node->val = val;
     return (heapptr_t)node;
@@ -178,9 +178,9 @@ heapptr_t ast_ref_alloc(heapptr_t name_str)
 {
    ast_ref_t* node = (ast_ref_t*)vm_alloc(
         sizeof(ast_ref_t),
-        TAG_AST_REF
+        SHAPE_AST_REF
     );
-    assert (get_tag(name_str) == TAG_STRING);
+    assert (get_shape(name_str) == SHAPE_STRING);
     node->name_str = (string_t*)name_str;
     node->idx = 0xFFFFFFFF;
     return (heapptr_t)node;
@@ -195,7 +195,7 @@ heapptr_t ast_binop_alloc(
 {
     ast_binop_t* node = (ast_binop_t*)vm_alloc(
         sizeof(ast_binop_t),
-        TAG_AST_BINOP
+        SHAPE_AST_BINOP
     );
     node->op = op;
     node->left_expr = left_expr;
@@ -211,7 +211,7 @@ heapptr_t ast_unop_alloc(
 {
     ast_unop_t* node = (ast_unop_t*)vm_alloc(
         sizeof(ast_unop_t),
-        TAG_AST_UNOP
+        SHAPE_AST_UNOP
     );
     node->op = op;
     node->expr = expr;
@@ -225,7 +225,7 @@ heapptr_t ast_seq_alloc(
 {
     ast_seq_t* node = (ast_seq_t*)vm_alloc(
         sizeof(ast_seq_t),
-        TAG_AST_SEQ
+        SHAPE_AST_SEQ
     );
     node->expr_list = expr_list;
     return (heapptr_t)node;
@@ -240,7 +240,7 @@ heapptr_t ast_if_alloc(
 {
     ast_if_t* node = (ast_if_t*)vm_alloc(
         sizeof(ast_if_t),
-        TAG_AST_IF
+        SHAPE_AST_IF
     );
     node->test_expr = test_expr;
     node->then_expr = then_expr;
@@ -256,7 +256,7 @@ heapptr_t ast_call_alloc(
 {
     ast_call_t* node = (ast_call_t*)vm_alloc(
         sizeof(ast_call_t),
-        TAG_AST_CALL
+        SHAPE_AST_CALL
     );
     node->fun_expr = fun_expr;
     node->arg_exprs = arg_exprs;
@@ -271,7 +271,7 @@ heapptr_t ast_fun_alloc(
 {
     ast_fun_t* node = (ast_fun_t*)vm_alloc(
         sizeof(ast_fun_t),
-        TAG_AST_FUN
+        SHAPE_AST_FUN
     );
     node->param_names = param_names;
     node->body_expr = body_expr;
@@ -467,7 +467,7 @@ array_t* parse_expr_list(input_t* input, char endCh, bool identList, bool needSe
         }
 
         // Write the expression to the array
-        array_set_ptr(arr, arr->len, expr);
+        array_set_obj(arr, arr->len, expr);
 
         // Read whitespace
         input_eat_ws(input);
