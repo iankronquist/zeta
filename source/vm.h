@@ -8,33 +8,21 @@
 /// Heap object pointer
 typedef uint8_t* heapptr_t;
 
-/// Value tag (and object header)
-typedef uint32_t tag_t;
+/// Value tag
+typedef uint8_t tag_t;
 
-// FIXME: does it make sense for object to have a tag of its own?
-// Probably, the empty object should have a fixed tag?
-// We may want to auto-assign the following tags by building shape nodes
+/// Shape index (object header)
+typedef uint32_t shapeidx_t;
 
-/// Non-object value tags
-/// Note: the boolean false has tag zero
-#define TAG_FALSE       0
-#define TAG_TRUE        1
-#define TAG_INT64       2
-#define TAG_FLOAT64     3
-#define TAG_STRING      4
-#define TAG_ARRAY       5
-#define TAG_RAW_PTR     6
-#define TAG_OBJECT      7
-#define TAG_CLOS        8
-#define TAG_AST_CONST   9
-#define TAG_AST_REF     10
-#define TAG_AST_BINOP   11
-#define TAG_AST_UNOP    12
-#define TAG_AST_SEQ     13
-#define TAG_AST_IF      14
-#define TAG_AST_CALL    15
-#define TAG_AST_FUN     16
-#define TAG_RUN_ERR     17
+/// Value type tags
+#define TAG_BOOL        0
+#define TAG_INT64       1
+#define TAG_FLOAT64     2
+#define TAG_STRING      3
+#define TAG_ARRAY       4
+#define TAG_RAW_PTR     5
+#define TAG_OBJECT      6
+#define TAG_CLOS        7
 
 /// Initial VM heap size
 #define HEAP_SIZE (1 << 24)
@@ -50,6 +38,9 @@ Word value type
 */
 typedef union
 {
+    int8_t int8;
+    int16_t int16;
+    int32_t int32;
     int64_t int64;
     double float64;
 
@@ -135,10 +126,18 @@ typedef struct array
 
 } array_t;
 
-/// Property/object attribute definitions
-#define ATTR_TAG_KNOWN  0b001
-#define ATTR_READ_ONLY  0b010
-#define ATTR_FROZEN     0b100
+/// Type tag known property attribute
+#define ATTR_TAG_KNOWN  (1 << 0)
+
+/// Property word known attribute
+#define ATTR_WORD_KNOWN (1 << 1)
+
+/// Read-only property attribute
+#define ATTR_READ_ONLY  (1 << 2)
+
+/// Object frozen attribute
+/// Frozen means shape cannot change, read-only and no new properties
+#define ATTR_OBJ_FROZEN (1 << 3)
 
 /*
 Shape node descriptor
@@ -149,19 +148,19 @@ typedef struct shape
     tag_t tag;
 
     /// Index of this shape node
-    tag_t idx;
+    tag_t shape_idx;
 
     /// Property name
     string_t* prop_name;
 
-    /// Parent shape
-    tag_t parent;
+    /// Parent shape index
+    tag_t parent_idx;
 
-    /// Property offset, in bytes
-    uint32_t offset;
+    /// Slot index
+    uint32_t slot_idx;
 
-    /// Type tag, if known
-    tag_t prop_tag;
+    /// Property word/value, if known
+    value_t prop_val;
 
     /// Property and object attributes
     uint8_t attrs;
@@ -194,7 +193,7 @@ bool value_equals(value_t this, value_t that);
 tag_t get_tag(heapptr_t obj);
 
 void vm_init();
-heapptr_t vm_alloc(uint32_t size, tag_t tag);
+heapptr_t vm_alloc(uint32_t size, shapeidx_t shape);
 
 string_t* string_alloc(uint32_t len);
 void string_print(string_t* str);

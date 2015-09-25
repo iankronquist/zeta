@@ -4,6 +4,18 @@
 #include <stdbool.h>
 #include "vm.h"
 
+/// Shape indices for AST nodes
+/// These are initialized in init_parser(), see parser.c
+extern shapeidx_t TAG_AST_CONST;
+extern shapeidx_t TAG_AST_REF;
+extern shapeidx_t TAG_AST_BINOP;
+extern shapeidx_t TAG_AST_UNOP;
+extern shapeidx_t TAG_AST_SEQ;
+extern shapeidx_t TAG_AST_IF;
+extern shapeidx_t TAG_AST_CALL;
+extern shapeidx_t TAG_AST_FUN;
+extern shapeidx_t TAG_RUN_ERR;
+
 /**
 Source position information
 */
@@ -62,6 +74,21 @@ typedef struct
 } ast_ref_t;
 
 /**
+Variable declaration node
+*/
+typedef struct
+{
+    tag_t tag;
+
+    /// Identifier name string
+    string_t* name_str;
+
+    /// Local index
+    uint32_t idx;
+
+} ast_var_t;
+
+/**
 Operator information structure
 */
 typedef struct
@@ -86,7 +113,7 @@ typedef struct
 
 } opinfo_t;
 
-// Operator definitions
+/// Operator definitions
 const opinfo_t OP_MEMBER;
 const opinfo_t OP_INDEX;
 const opinfo_t OP_NEG;
@@ -101,6 +128,7 @@ const opinfo_t OP_LE;
 const opinfo_t OP_GT;
 const opinfo_t OP_GE;
 const opinfo_t OP_IN;
+const opinfo_t OP_INST_OF;
 const opinfo_t OP_EQ;
 const opinfo_t OP_NE;
 const opinfo_t OP_BIT_AND;

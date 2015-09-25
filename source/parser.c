@@ -9,6 +9,18 @@
 #include "parser.h"
 #include "vm.h"
 
+/// Shape indices for AST nodes
+/// These are initialized in init_parser(), see parser.c
+shapeidx_t TAG_AST_CONST;
+shapeidx_t TAG_AST_REF;
+shapeidx_t TAG_AST_BINOP;
+shapeidx_t TAG_AST_UNOP;
+shapeidx_t TAG_AST_SEQ;
+shapeidx_t TAG_AST_IF;
+shapeidx_t TAG_AST_CALL;
+shapeidx_t TAG_AST_FUN;
+shapeidx_t TAG_RUN_ERR;
+
 char* srcpos_to_str(srcpos_t pos, char* buf)
 {
     sprintf(buf, "@%d:%d", pos.lineNo, pos.colNo);
@@ -533,6 +545,7 @@ const opinfo_t OP_LE = { "<=", NULL, 2, 9, 'l', false };
 const opinfo_t OP_GT = { ">", NULL, 2, 9, 'l', false };
 const opinfo_t OP_GE = { ">=", NULL, 2, 9, 'l', false };
 const opinfo_t OP_IN = { "in", NULL, 2, 9, 'l', false };
+const opinfo_t OP_INST_OF = { "instanceof", NULL, 2, 9, 'l', false };
 
 /// Equality comparison
 const opinfo_t OP_EQ = { "==", NULL, 2, 8, 'l', false };
@@ -613,7 +626,8 @@ const opinfo_t* input_match_op(input_t* input, int minPrec, bool preUnary)
         break;
 
         case 'i':
-        if (input_match_str(input, "in"))   op = &OP_IN;
+        if (input_match_str(input, "instanceof")) op = &OP_INST_OF;
+        if (input_match_str(input, "in")) op = &OP_IN;
         break;
 
         case '=':
@@ -1031,6 +1045,7 @@ void test_parser()
     test_parse_expr("if x then y else z");
     test_parse_expr("if x then a+c else d");
     test_parse_expr("if x then a else b");
+    test_parse_expr("if a instanceof b then true");
     test_parse_expr("if 'a' in b or 'c' in b then y");
     test_parse_expr("if not x then y else z");
     test_parse_expr("if x and not x then true else false");
@@ -1076,5 +1091,11 @@ void test_parser()
     test_parse_expr("fun (x) { println(x) println(y) }");
     test_parse_expr("if (x) then { println(x) } else { println(y) z }");
     test_parse_expr_fail("{ a, b }");
+
+    // TODO: try parsing parser.zeta
+
+
+
+
 }
 

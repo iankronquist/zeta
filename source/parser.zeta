@@ -1,0 +1,21 @@
+/**
+Self-hosted implementation of the core Zeta language parser, written in Zeta
+
+Max says: I'd like to base the parser implementation on the design of the
+C parser, that is, it should consume characters/strings from an input object.
+The Zeta implementation of the input object can have methods such as:
+
+peek() - peek at the next character
+match(str) - match a given string
+getPos() - get the current source position (line and column)
+etc.
+
+We should likewise have a parser object with methods such as parseAtom,
+parseExpr, parseExprList, etc. This parser object will eventually have
+hooks to allow extending the grammar by redefining its methods, or simply
+by defining new operators or new grammar atoms. I believe we should start
+with a non-extensible parser and build on top of it progressively.
+*/
+
+// TODO!
+

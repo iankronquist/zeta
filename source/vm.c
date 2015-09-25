@@ -11,8 +11,8 @@
 vm_t vm;
 
 /// Boolean constant values
-const value_t VAL_FALSE = { 0, TAG_FALSE };
-const value_t VAL_TRUE = { 0, TAG_TRUE };
+const value_t VAL_FALSE = { 0, TAG_BOOL };
+const value_t VAL_TRUE = { 1, TAG_BOOL };
 
 value_t value_from_heapptr(heapptr_t v)
 {
@@ -50,12 +50,11 @@ void value_print(value_t value)
 {
     switch (value.tag)
     {
-        case TAG_FALSE:
-        printf("false");
-        break;
-
-        case TAG_TRUE:
-        printf("true");
+        case TAG_BOOL:
+        if (value.word.int8 != 1)
+            printf("true");
+        else
+            printf("false");
         break;
 
         case TAG_INT64:
@@ -111,15 +110,23 @@ void vm_init()
     vm.heapstart = calloc(1, HEAP_SIZE);
     vm.heaplimit = vm.heapstart + HEAP_SIZE;
     vm.allocptr = vm.heapstart;
+
+
+
+
+
+
+
+
 }
 
 /**
 Allocate an object in the hosted heap
 Initializes the object descriptor
 */
-heapptr_t vm_alloc(uint32_t size, tag_t tag)
+heapptr_t vm_alloc(uint32_t size, shapeidx_t shape)
 {
-    assert (size >= sizeof(tag_t));
+    assert (size >= sizeof(shapeidx_t));
 
     size_t availspace = vm.heaplimit - vm.allocptr;
 
@@ -138,8 +145,8 @@ heapptr_t vm_alloc(uint32_t size, tag_t tag)
     // Align the allocation pointer
     vm.allocptr = (uint8_t*)(((ptrdiff_t)vm.allocptr + 7) & -8);
 
-    // Set the object descriptor
-    *((tag_t*)ptr) = tag;
+    // Set the object shape
+    *((shapeidx_t*)ptr) = shape;
 
     return ptr;
 }
@@ -213,9 +220,47 @@ value_t array_get(array_t* array, uint32_t idx)
     return array->elems[idx];
 }
 
+shape_t* shape_alloc()
+{
+    shape_t* obj = (shape_t*)vm_alloc(
+        sizeof(shape_t),
+        TAG_OBJECT
+    );
+
+    // Note: shape needs to map to a struct in order to implement this object
+
+    // TODO
+    return NULL;
+}
+
+object_t* object_alloc(uint32_t cap)
+{
+    object_t* obj = (object_t*)vm_alloc(
+        sizeof(object_t) + sizeof(word_t) * cap,
+        TAG_OBJECT
+    );
+
+    obj->cap = cap;
+
+    return obj;
+}
+
+void object_set_prop(object_t* obj, const char* prop_name, value_t value)
+{
+    // TODO: sketch this
+    // no extension for now, just test the basics
+}
+
+// TODO:
+//value_t object_get_prop() {}
+
 void test_vm()
 {
     assert (sizeof(word_t) == 8);
     assert (sizeof(value_t) == 16);
+
+    // TODO: test object alloc, set prop, get prop
+    // two properties
+
 }
 

@@ -23,11 +23,8 @@ bool eval_truth(value_t value)
 {
     switch (value.tag)
     {
-        case TAG_FALSE:
-        return false;
-
-        case TAG_TRUE:
-        return true;
+        case TAG_BOOL:
+        return value.word.int8 != 0;
 
         case TAG_INT64:
         return value.word.int64 != 0;
@@ -51,8 +48,13 @@ bool eval_truth(value_t value)
 
 value_t eval_expr(heapptr_t expr)
 {
-    // Switch on the expression's tag
-    switch (get_tag(expr))
+    // TODO: Get the parent of the AST node object
+
+
+    return VAL_FALSE;
+
+
+    /*
     {
         case TAG_AST_CONST:
         {
@@ -213,6 +215,7 @@ value_t eval_expr(heapptr_t expr)
         printf("eval error, unknown expression type, tag=%d\n", get_tag(expr));
         return VAL_FALSE;
     }
+    */
 }
 
 /// Evaluate the code in a given string
