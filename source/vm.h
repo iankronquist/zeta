@@ -154,25 +154,26 @@ typedef struct shape
     shapeidx_t shape;
 
     /// Index of this shape node
-    tag_t shape_idx;
+    shapeidx_t idx;
 
     /// Property name
     string_t* prop_name;
 
     /// Parent shape index
-    tag_t parent_idx;
+    shapeidx_t parent;
 
-    /// Slot index
+    /// Slot index for this property
     uint32_t slot_idx;
 
-    /// Property word/value, if known
+    /// Property value word/tag, if known
     value_t prop_val;
 
     /// Property and object attributes
     uint8_t attrs;
 
-    // TODO: child shapes
-    // KISS for now, just an array
+    /// Child shapes
+    /// KISS for now, just an array
+    array_t* children;
 
 } shape_t;
 

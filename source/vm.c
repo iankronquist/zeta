@@ -44,8 +44,6 @@ bool value_equals(value_t this, value_t that)
     if (this.word.int64 != that.word.int64)
         return false;
 
-    // TODO: FP zero handling
-
     return true;
 }
 
@@ -119,9 +117,12 @@ void vm_init()
 
 
 
+    // TODO: alloc SHAPE_ARRAY
+    // for now, the shapes for string and array will just be dummies
 
 
-    // TODO: set SHAPE_STRING
+    // TODO: alloc SHAPE_STRING
+
 
 
 
