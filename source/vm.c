@@ -118,8 +118,13 @@ void vm_init()
     // Allocate the shape table
     vm.shapetbl = array_alloc(4096);
 
+    // TODO:
+    // Allocate the string table
+
+
     // Allocate the empty object shape
-    vm.empty_shape = shape_alloc();
+    // TODO: shape index property?
+    vm.empty_shape = shape_alloc(NULL, NULL, 0, 0);
     assert (vm.empty_shape->idx == 0);
 
 
@@ -234,10 +239,11 @@ value_t array_get(array_t* array, uint32_t idx)
     return array->elems[idx];
 }
 
-// TODO: probably want to specify the field size
 shape_t* shape_alloc(
-    shapeidx_t parent, 
-    string_t* prop_name
+    shape_t* parent,
+    string_t* prop_name,
+    uint8_t numBytes,
+    uint8_t attrs
 )
 {
     shape_t* shape = (shape_t*)vm_alloc(
@@ -247,7 +253,7 @@ shape_t* shape_alloc(
 
     // Note: shape needs to map to a struct in order to implement this object
 
-    shape->parent = parent;
+    shape->parent = parent? parent->idx:0;
 
     shape->prop_name = 0;
 
@@ -255,17 +261,18 @@ shape_t* shape_alloc(
 
     shape->children = NULL;
 
-
-
-    // TODO:
-    // Compute the field offset
-
-
-
-
-
-
-
+    // Compute the aligned field offset
+    if (parent)
+    {
+        shape->offset = parent->offset + numBytes;
+        uint32_t rem = shape->offset % numBytes;
+        if (rem != 0)
+            shape->offset += numBytes - rem;
+    }
+    else
+    {
+        shape->offset = 0;
+    }
 
     // Set the shape index
     shape->idx = vm.shapetbl->len;
@@ -301,6 +308,8 @@ void test_vm()
 {
     assert (sizeof(word_t) == 8);
     assert (sizeof(value_t) == 16);
+
+    // TODO: test string table
 
     // TODO: test object alloc, set prop, get prop
     // two properties

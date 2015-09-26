@@ -176,7 +176,7 @@ typedef struct shape
     uint8_t attrs;
 
     /// Property/field size in bytes
-    uint8_t size;
+    uint8_t numBytes;
 
     /// Child shapes
     /// KISS for now, just an array
@@ -196,6 +196,8 @@ typedef struct object
 
     /// Object extension table
     object_t* ext_tbl;
+
+    word_t word_slots[];
 
 } object_t;
 
@@ -217,7 +219,12 @@ void array_set(array_t* array, uint32_t idx, value_t val);
 void array_set_obj(array_t* array, uint32_t idx, heapptr_t val);
 value_t array_get(array_t* array, uint32_t idx);
 
-shape_t* shape_alloc();
+shape_t* shape_alloc(
+    shape_t* parent,
+    string_t* prop_name,
+    uint8_t numBytes,
+    uint8_t attrs
+);
 
 void test_vm();
 
