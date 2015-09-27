@@ -549,7 +549,15 @@ void test_vm()
     assert (sizeof(word_t) == 8);
     assert (sizeof(value_t) == 16);
 
-    // TODO: test string table
+    // Test the string table
+    string_t* str_foo1 = vm_get_string("foo");
+    assert (str_foo1->len == 3);
+    assert (strncmp(str_foo1->data, "foo", str_foo1->len) == 0);
+    string_t* str_bar = vm_get_string("bar");
+    string_t* str_foo2 = vm_get_string("foo");
+    assert (str_foo1 == str_foo2);
+
+
 
     // TODO: test object alloc, set prop, get prop
     // two properties
