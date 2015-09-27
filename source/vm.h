@@ -15,6 +15,7 @@ typedef uint8_t tag_t;
 typedef uint32_t shapeidx_t;
 
 /// Value type tags
+/// Note: the value false is (0, 0)
 #define TAG_BOOL        0
 #define TAG_INT64       1
 #define TAG_FLOAT64     2
@@ -26,6 +27,11 @@ typedef uint32_t shapeidx_t;
 
 /// Initial VM heap size
 #define HEAP_SIZE (1 << 24)
+
+/// String table parameters
+#define STR_TBL_INIT_SIZE       16384
+#define STR_TBL_MAX_LOAD_NUM    3
+#define STR_TBL_MAX_LOAD_DEN    5
 
 /// Shape of array objects
 extern shapeidx_t SHAPE_STRING;
@@ -89,7 +95,11 @@ typedef struct
 
     array_t* shapetbl;
 
+    /// String table, for string interning
     array_t* stringtbl;
+
+    /// Number of strings allocated
+    uint32_t num_strings;
 
     /// Global object
     object_t* global;
@@ -137,17 +147,21 @@ typedef struct array
 } array_t;
 
 /// Type tag known property attribute
-#define ATTR_TAG_KNOWN  (1 << 0)
+#define ATTR_TAG_KNOWN (1 << 0)
 
 /// Property word known attribute
 #define ATTR_WORD_KNOWN (1 << 1)
 
 /// Read-only property attribute
-#define ATTR_READ_ONLY  (1 << 2)
+#define ATTR_READ_ONLY (1 << 2)
 
 /// Object frozen attribute
 /// Frozen means shape cannot change, read-only and no new properties
 #define ATTR_OBJ_FROZEN (1 << 3)
+
+/// Fixed object layout
+/// Shape cannot change, no capacity or next pointer or type tags
+#define ATTR_FIXED_LAYOUT (1 << 4)
 
 /*
 Shape node descriptor
