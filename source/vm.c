@@ -519,6 +519,129 @@ shape_t* shape_alloc(
     return shape;
 }
 
+/**
+Method to define or redefine a property.
+This may fork the shape tree if redefining a property.
+*/
+shape_t* shape_def_prop(
+    char* propName,
+    //ValType type,
+    uint8_t attrs,
+    shape_t* defShape
+)
+{
+    /*
+    // Check if a shape object already exists for this definition
+    if (propName in propDefs)
+    {
+        if (type in propDefs[propName])
+        {
+            foreach (shape; propDefs[propName][type])
+            {
+                // If this shape matches, return it
+                if (shape.attrs == attrs)
+                    return shape;
+            }
+        }
+    }
+    */
+
+    /*
+    // If this is a new property addition
+    if (defShape == NULL)
+    {
+        // Create the new shape
+        auto newShape = new ObjShape(
+            defShape? defShape:this,
+            propName,
+            type,
+            attrs
+        );
+
+        // Add it to the property definitions
+        propDefs[propName][type] ~= newShape;
+        assert (propDefs[propName][type].length > 0);
+
+        return newShape;
+    }
+    */
+
+    /*
+    // This is redefinition of an existing property
+    // Assemble the list of properties added
+    // after the original definition shape
+    ObjShape[] shapes;
+    for (auto shape = this; shape !is defShape; shape = shape.parent)
+    {
+        assert (shape !is null);
+        shapes ~= shape;
+    }
+
+    // Define the property with the same parent
+    // as the original shape
+    auto curParent = defShape.parent.defProp(
+        propName,
+        type,
+        attrs,
+        null
+    );
+
+    // Redefine all the intermediate properties
+    foreach_reverse (shape; shapes)
+    {
+        curParent = curParent.defProp(
+            shape.propName,
+            shape.type,
+            shape.attrs,
+            null
+        );
+    }
+
+    // Add the last added shape to the property definitions
+    propDefs[propName][type] ~= curParent;
+    assert (propDefs[propName][type].length > 0);
+
+    return curParent;
+    */
+}
+
+/**
+Get the shape defining a given property
+*/
+shape_t* shape_get_def(shape_t* this, char* propName)
+{
+    /*
+    // If there is a cached shape for this property name, return it
+    auto cached = propCache.get(propName, this);
+    if (cached !is this)
+       return cached;
+    */
+
+    // For each shape going down the tree, excluding the root
+    for (shape_t* shape = this; shape->parent != 0; /*shape = shape->parent*/)
+    {
+        /*
+        // If the name matches
+        if (propName == shape.propName && !shape.deleted)
+        {
+            // Cache the shape found for this property name
+            propCache[propName] = shape;
+
+            // Return the shape
+            return shape;
+        }
+        */
+    }
+
+    /*
+    // Cache that the property was not found
+    propCache[propName] = null;
+    */
+
+    // Root shape reached, property not found
+    return NULL;
+}
+
 object_t* object_alloc(uint32_t cap)
 {
     object_t* obj = (object_t*)vm_alloc(
@@ -531,14 +654,171 @@ object_t* object_alloc(uint32_t cap)
     return obj;
 }
 
-void object_set_prop(object_t* obj, const char* prop_name, value_t value)
+bool object_set_prop(object_t* obj, const char* prop_name, value_t value)
 {
-    // TODO: sketch this
-    // no extension for now, just test the basics
+    // Get the shape from the object
+    shape_t* objShape = array_get(vm.shapetbl, obj->shape).word.shape;
+    assert (objShape != NULL);
+
+    /*
+    // Find the shape defining this property (if it exists)
+    auto defShape = objShape.getDefShape(propStr);
+
+    // If the property is not already defined
+    if (defShape is null)
+    {
+        // If the object is not extensible, do nothing
+        if (!objShape.extensible)
+        {
+            //writeln("rejecting write for ", propStr);
+            return false;
+        }
+
+        // Create a new shape for the property
+        defShape = objShape.defProp(
+            propStr,
+            valType,
+            defAttrs,
+            null
+        );
+
+        // Set the new shape for the object
+        obj_set_shape_idx(obj.ptr, defShape.shapeIdx);
+    }
+    else
+    {
+        // If the property is not writable, do nothing
+        if (!defShape.writable)
+        {
+            //writeln("redefining constant: ", propStr);
+            return false;
+        }
+
+        // If the value type doesn't match the shape type
+        if (!valType.isSubType(defShape.type))
+        {
+            // Number of shape changes due to a type mismatch
+            ++stats.numShapeFlips;
+            if (objPair == vm.globalObj)
+                ++stats.numShapeFlipsGlobal;
+
+            //writeln(defShape.type.tag, " ==> ", valType.tag);
+
+            // Change the defining shape to match the value type
+            objShape = objShape.defProp(
+                propStr,
+                valType,
+                defAttrs,
+                defShape
+            );
+
+            // Set the new shape for the object
+            obj_set_shape_idx(obj.ptr, objShape.shapeIdx);
+
+            // Find the shape defining this property
+            defShape = objShape.getDefShape(propStr);
+            assert (defShape !is null);
+        }
+    }
+
+    uint32_t slotIdx = defShape.slotIdx;
+
+    // Get the number of slots in the object
+    auto objCap = obj_get_cap(obj.ptr);
+    assert (objCap > 0);
+
+    // If the slot is within the object
+    if (slotIdx < objCap)
+    {
+        // Set the value and its type in the object
+        setSlotPair(obj.ptr, slotIdx, val.pair);
+    }
+
+    // The property is past the object's capacity
+    else 
+    {
+        // Get the extension table pointer
+        auto extTbl = GCRoot(obj_get_next(obj.ptr), Tag.OBJECT);
+
+        // If the extension table isn't yet allocated
+        if (extTbl.ptr is null)
+        {
+            auto extCap = 2 * objCap;
+            extTbl = allocExtTbl(vm, obj.ptr, extCap);
+            obj_set_next(obj.ptr, extTbl.ptr);
+        }
+
+        auto extCap = obj_get_cap(extTbl.ptr);
+
+        // If the extension table isn't big enough
+        if (slotIdx >= extCap)
+        {
+            auto newExtCap = 2 * extCap;
+            auto newExtTbl = allocExtTbl(vm, obj.ptr, newExtCap);
+
+            // Copy over the property words and types
+            for (uint32_t i = objCap; i < extCap; ++i)
+                setSlotPair(newExtTbl.ptr, i, getSlotPair(extTbl.ptr, i));
+
+            extTbl = newExtTbl;
+            obj_set_next(obj.ptr, extTbl.ptr);
+        }
+
+        // Set the value and its type in the extension table
+        setSlotPair(extTbl.ptr, slotIdx, val.pair);
+    }
+    */
+
+    // Write successful
+    return true;
 }
 
-// TODO:
-//value_t object_get_prop() {}
+value_t object_get_prop(object_t* obj, char* propStr)
+{
+    // Get the shape from the object
+    shape_t* objShape = array_get(vm.shapetbl, obj->shape).word.shape;
+    assert (objShape != NULL);
+
+    /*
+    // Find the shape defining this property (if it exists)
+    auto defShape = objShape.getDefShape(propStr);
+
+    // If the property is defined
+    if (defShape !is null)
+    {
+        uint32_t slotIdx = defShape.slotIdx;
+        auto objCap = obj_get_cap(obj.word.ptrVal);
+
+        if (slotIdx < objCap)
+        {
+            return getSlotPair(obj.word.ptrVal, slotIdx);
+        }
+        else
+        {
+            auto extTbl = obj_get_next(obj.word.ptrVal);
+            assert (slotIdx < obj_get_cap(extTbl));
+            return getSlotPair(extTbl, slotIdx);
+        }
+    }
+
+    // TODO: for now, no proto lookup
+    /*
+    // Get the prototype pointer
+    auto proto = getProp(obj, "__proto__"w);
+
+    // If the prototype is null, produce the undefined constant
+    if (proto is NULL)
+        return UNDEF;
+
+    // Do a recursive lookup on the prototype
+    return object_get_prop(
+        proto,
+        propStr
+    );
+    */
+
+    return VAL_FALSE;
+}
 
 //============================================================================
 // VM tests

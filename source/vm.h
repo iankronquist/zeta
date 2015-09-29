@@ -60,6 +60,7 @@ typedef union
 
     array_t* array;
     string_t* string;
+    shape_t* shape;
     object_t* object;
 
     shapeidx_t shapeidx;
