@@ -487,9 +487,7 @@ shape_t* shape_alloc(
         TAG_OBJECT
     );
 
-    // Note: shape needs to map to a struct in order to implement this object
-
-    shape->parent = parent? parent->idx:0;
+    shape->parent = parent;
 
     shape->prop_name = 0;
 
@@ -524,7 +522,7 @@ Method to define or redefine a property.
 This may fork the shape tree if redefining a property.
 */
 shape_t* shape_def_prop(
-    char* propName,
+    const char* propName,
     //ValType type,
     uint8_t attrs,
     shape_t* defShape
@@ -608,7 +606,7 @@ shape_t* shape_def_prop(
 /**
 Get the shape defining a given property
 */
-shape_t* shape_get_def(shape_t* this, char* propName)
+shape_t* shape_get_def(shape_t* this, const char* prop_name)
 {
     /*
     // If there is a cached shape for this property name, return it
@@ -651,52 +649,64 @@ object_t* object_alloc(uint32_t cap)
 
     obj->cap = cap;
 
+    // The object starts out with the empty shape
+    obj->shape = vm.empty_shape->idx;
+
     return obj;
 }
 
-bool object_set_prop(object_t* obj, const char* prop_name, value_t value)
+bool object_set_prop(
+    object_t* obj,
+    const char* prop_name,
+    value_t value,
+    uint8_t def_attrs
+)
 {
     // Get the shape from the object
     shape_t* objShape = array_get(vm.shapetbl, obj->shape).word.shape;
     assert (objShape != NULL);
 
-    /*
     // Find the shape defining this property (if it exists)
-    auto defShape = objShape.getDefShape(propStr);
+    shape_t* defShape = shape_get_def(objShape, prop_name);
 
     // If the property is not already defined
-    if (defShape is null)
+    if (defShape == NULL)
     {
-        // If the object is not extensible, do nothing
-        if (!objShape.extensible)
+        // If the object is frozen
+        if (objShape->attrs & ATTR_OBJ_FROZEN)
         {
-            //writeln("rejecting write for ", propStr);
-            return false;
+            assert (false);
         }
 
         // Create a new shape for the property
-        defShape = objShape.defProp(
-            propStr,
-            valType,
-            defAttrs,
-            null
+        defShape = shape_def_prop(
+            prop_name,
+            //valType,
+            def_attrs,
+            NULL
         );
 
         // Set the new shape for the object
-        obj_set_shape_idx(obj.ptr, defShape.shapeIdx);
+        obj->shape = defShape->idx;
     }
     else
     {
         // If the property is not writable, do nothing
-        if (!defShape.writable)
+        if (defShape->attrs & ATTR_READ_ONLY)
         {
-            //writeln("redefining constant: ", propStr);
-            return false;
+            assert (false);
         }
 
+
+        // TODO: ensure type tag matches
+
+
         // If the value type doesn't match the shape type
-        if (!valType.isSubType(defShape.type))
+        //if (!valType.isSubType(defShape.type))
         {
+            assert (false);
+
+            /*
             // Number of shape changes due to a type mismatch
             ++stats.numShapeFlips;
             if (objPair == vm.globalObj)
@@ -718,25 +728,40 @@ bool object_set_prop(object_t* obj, const char* prop_name, value_t value)
             // Find the shape defining this property
             defShape = objShape.getDefShape(propStr);
             assert (defShape !is null);
+            */
         }
     }
 
-    uint32_t slotIdx = defShape.slotIdx;
+    uint32_t offset = defShape->offset;
 
-    // Get the number of slots in the object
-    auto objCap = obj_get_cap(obj.ptr);
+    // Get the object capacity in bytes
+    uint32_t objCap = obj->cap;
     assert (objCap > 0);
 
     // If the slot is within the object
-    if (slotIdx < objCap)
+    if (offset < objCap)
     {
-        // Set the value and its type in the object
-        setSlotPair(obj.ptr, slotIdx, val.pair);
+        switch (defShape->field_size)
+        {
+            case 4:
+            *((int32_t*)obj->payload) = value.word.int32;
+            break;
+
+            case 8:
+            *((int64_t*)obj->payload) = value.word.int64;
+            break;
+
+            default:
+            assert (false);
+        }
     }
 
     // The property is past the object's capacity
     else 
     {
+        assert (false);
+
+        /*
         // Get the extension table pointer
         auto extTbl = GCRoot(obj_get_next(obj.ptr), Tag.OBJECT);
 
@@ -766,8 +791,8 @@ bool object_set_prop(object_t* obj, const char* prop_name, value_t value)
 
         // Set the value and its type in the extension table
         setSlotPair(extTbl.ptr, slotIdx, val.pair);
+        */
     }
-    */
 
     // Write successful
     return true;

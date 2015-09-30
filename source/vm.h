@@ -170,28 +170,29 @@ Property tags should immediately follow properties, if unknown
 */
 typedef struct shape
 {
+    /// Shape of this object
     shapeidx_t shape;
 
-    /// Index of this shape node
+    /// Index of this shape node in the shape table
     shapeidx_t idx;
+
+    /// Parent shape node
+    shape_t* parent;
 
     /// Property name
     string_t* prop_name;
-
-    /// Parent shape index
-    shapeidx_t parent;
+ 
+    /// Property value word/tag, if known
+    value_t prop_val;
 
     /// Offset in bytes for this property
     uint32_t offset;
-
-    /// Property value word/tag, if known
-    value_t prop_val;
 
     /// Property and object attributes
     uint8_t attrs;
 
     /// Property/field size in bytes
-    uint8_t numBytes;
+    uint8_t field_size;
 
     /// Child shapes
     /// KISS for now, just an array
@@ -201,18 +202,19 @@ typedef struct shape
 
 /**
 Object
+Note: for now, all object tags are encoded directly in shapes
 */
 typedef struct object
 {
     shapeidx_t shape;
 
-    /// Capacity in bytes
+    /// Storae/payload capacity in bytes
     uint32_t cap;
 
     /// Object extension table
     object_t* ext_tbl;
 
-    word_t word_slots[];
+    uint8_t payload[];
 
 } object_t;
 
