@@ -154,14 +154,14 @@ I've chosen to implement the VM core in pure C (not C++), for the following reas
 - To maximize portability. GCC is available on almost every platform in existence.
 
 An important goal of the Zeta VM is that it should be easy to build on both
-Mac and Linux with minimal dependencies. It shouldn't require any extra dependencies
-to run out of the box. You may need to install libraries to use graphical capabilities
-and such, but the core VM will built with only a C compiler installed on your
-machine. Zeta must always be easy to install and get started with.
+Mac and Linux with minimal dependencies. You may need to install libraries to
+use graphical capabilities and such, but the core VM should always with only a
+C compiler installed on your machine. Zeta must alway remain easy to install and
+get started with.
 
 The zeta implementation will be largely [self-hosted](https://en.wikipedia.org/wiki/Self-hosting).
-The core VM will implement an interpreter in C, but the garbage collector and zeta JIT
-compiler will be written in the zeta language itself.
+The core VM will implement an interpreter in C, but the garbage collector and Zeta JIT
+compiler will be written in the Zeta language itself.
 
 A custom x86 assembler and backend will be built for the JIT compiler, as was done
 for the [Higgs](https://github.com/higgsjs/Higgs) VM. This will allow self-modifying
@@ -177,35 +177,39 @@ grammar, as it will only serve to bootstrap the system.
 The second step of the project is to implement an interpreter for the Zeta
 core language. This interpreter will also have limited language support. The
 point of the interpreter is to eventually interpret the code for the Zeta
-JIT compiler, which will itself be written in Zeta. The interpreter will not
-be fast, and it will not be running user code, at least not in later
-implementations of Zeta. As of today, the interpreter is very incomplete.
+JIT compiler, which will itself be written in Zeta. Because the core
+interpreter is only a stepping stone in the bootstrap process, I intend to cut
+corners, keeping the implementation minimal and restricted in terms of
+supported language features. For instance, I believe it should be possible
+to bootstrap Zeta without a garbage collector. At the time of this writing,
+the interpreter is a work in progress.
 
-In order to have an extensible grammar, we will implement a Zeta parser in
+In order to permit grammar extensions, we will implement a Zeta parser in
 Zeta itself. This parser will run on the Zeta core interpreter. Implementing
-the parser in Zeta will allow us to make use of objects, garbage collection,
-closures, etc. It will also make it much easier for Zeta code to interface
-with the parser in order to extend the grammar. I intend to implement the
-self-hosted, extensible Zeta parser soon after the interpreter is ready, so
-that we can showcase the power of the extensible Zeta grammar.
+the parser in Zeta will allow us to make use of features not found in C such
+as extensible objects, garbage collection, closures, etc. It will also make it
+much easier for Zeta code to interface with the parser in order to extend the
+grammar. I intend to implement the self-hosted, extensible Zeta parser soon
+after the interpreter is ready, so that we can showcase the power of the
+extensible Zeta grammar.
 
 The Zeta JIT compiler will be written in Zeta and initially interpreted.
-However, the goal is for the JIT compiler to be able to compile itself to
+The goal is for the JIT compiler to be able to compile itself to
 native x86 machine code. It will also be able to JIT compile the self-hosted
 Zeta parser. Once these components are compiled to native code, the system
 should run at an acceptable speed. Note that the first version of
-the Zeta JIT compiler is likely to be quite far from the performance-level
-of modern JavaScript JIT. I do believe, however, that we can very easily beat
+the Zeta JIT compiler is likely to be far from the performance-level
+of modern JavaScript JITs. I do believe, however, that we can very easily beat
 the performance of the stock CPython and Ruby implementations, even with a
 naive JIT.
 
-You might be thinking that the startup of the Zeta VM will be dog slow if we
-use an interpreted JIT compiler to compile itself, the Zeta runtime, and our
-self-hosted Zeta parser, all of this before any user code can be run. You would
-be right, this bootstrap phase is likely to take up to a few minutes. This is
-where the ability to serialize an initialized heap to disk will come in handy.
-Because all of the Zeta data structures are self-hosted, we will be able to
-save the initialized heap to disk after the bootstrap/initialization is
-complete. Then, restarting the VM from this saved point should only take
+You may be thinking that the startup of the Zeta VM will be dog slow if we
+use an interpreted JIT compiler which compiles itself, the Zeta runtime, and our
+self-hosted Zeta parser, all of this before any user code can be run. This
+bootstrap phase is likely to take up to a few minutes. This is
+where the ability to serialize an initialized heap to an image on disk will
+come in handy. Because all of the Zeta data structures are self-hosted, we will
+be able to save the initialized heap to disk after the bootstrap/initialization
+is complete. Then, restarting the VM from this saved point should only take
 milliseconds.
 

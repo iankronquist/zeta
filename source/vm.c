@@ -608,33 +608,16 @@ Get the shape defining a given property
 */
 shape_t* shape_get_def(shape_t* this, const char* prop_name)
 {
-    /*
-    // If there is a cached shape for this property name, return it
-    auto cached = propCache.get(propName, this);
-    if (cached !is this)
-       return cached;
-    */
-
     // For each shape going down the tree, excluding the root
-    for (shape_t* shape = this; shape->parent != 0; /*shape = shape->parent*/)
+    for (shape_t* shape = this; shape->parent != 0; shape = shape->parent)
     {
-        /*
         // If the name matches
-        if (propName == shape.propName && !shape.deleted)
+        if (strncmp(shape->prop_name->data, prop_name, shape->prop_name->len) == 0)
         {
-            // Cache the shape found for this property name
-            propCache[propName] = shape;
-
             // Return the shape
             return shape;
         }
-        */
     }
-
-    /*
-    // Cache that the property was not found
-    propCache[propName] = null;
-    */
 
     // Root shape reached, property not found
     return NULL;
@@ -697,21 +680,12 @@ bool object_set_prop(
             assert (false);
         }
 
-
-        // TODO: ensure type tag matches
-
-
         // If the value type doesn't match the shape type
-        //if (!valType.isSubType(defShape.type))
+        if (value.tag != defShape->prop_val.tag)
         {
             assert (false);
 
             /*
-            // Number of shape changes due to a type mismatch
-            ++stats.numShapeFlips;
-            if (objPair == vm.globalObj)
-                ++stats.numShapeFlipsGlobal;
-
             //writeln(defShape.type.tag, " ==> ", valType.tag);
 
             // Change the defining shape to match the value type
@@ -741,14 +715,16 @@ bool object_set_prop(
     // If the slot is within the object
     if (offset < objCap)
     {
+        heapptr_t word_ptr = ((heapptr_t)obj) + offset;
+
         switch (defShape->field_size)
         {
             case 4:
-            *((int32_t*)obj->payload) = value.word.int32;
+            *(int32_t*)word_ptr = value.word.int32;
             break;
 
             case 8:
-            *((int64_t*)obj->payload) = value.word.int64;
+            *(int64_t*)word_ptr = value.word.int64;
             break;
 
             default:
@@ -760,69 +736,54 @@ bool object_set_prop(
     else 
     {
         assert (false);
-
-        /*
-        // Get the extension table pointer
-        auto extTbl = GCRoot(obj_get_next(obj.ptr), Tag.OBJECT);
-
-        // If the extension table isn't yet allocated
-        if (extTbl.ptr is null)
-        {
-            auto extCap = 2 * objCap;
-            extTbl = allocExtTbl(vm, obj.ptr, extCap);
-            obj_set_next(obj.ptr, extTbl.ptr);
-        }
-
-        auto extCap = obj_get_cap(extTbl.ptr);
-
-        // If the extension table isn't big enough
-        if (slotIdx >= extCap)
-        {
-            auto newExtCap = 2 * extCap;
-            auto newExtTbl = allocExtTbl(vm, obj.ptr, newExtCap);
-
-            // Copy over the property words and types
-            for (uint32_t i = objCap; i < extCap; ++i)
-                setSlotPair(newExtTbl.ptr, i, getSlotPair(extTbl.ptr, i));
-
-            extTbl = newExtTbl;
-            obj_set_next(obj.ptr, extTbl.ptr);
-        }
-
-        // Set the value and its type in the extension table
-        setSlotPair(extTbl.ptr, slotIdx, val.pair);
-        */
     }
 
     // Write successful
     return true;
 }
 
-value_t object_get_prop(object_t* obj, char* propStr)
+value_t object_get_prop(object_t* obj, char* prop_name)
 {
     // Get the shape from the object
     shape_t* objShape = array_get(vm.shapetbl, obj->shape).word.shape;
     assert (objShape != NULL);
 
-    /*
     // Find the shape defining this property (if it exists)
-    auto defShape = objShape.getDefShape(propStr);
+    shape_t* defShape = shape_get_def(objShape, prop_name);
 
     // If the property is defined
-    if (defShape !is null)
+    if (defShape != NULL)
     {
-        uint32_t slotIdx = defShape.slotIdx;
-        auto objCap = obj_get_cap(obj.word.ptrVal);
+        // The core interpreter only deals with objects that have
+        // property types encoded in the shape
+        assert (defShape->attrs & ATTR_TAG_KNOWN);
 
-        if (slotIdx < objCap)
+        uint32_t offset = defShape->offset;
+
+        if (offset < obj->cap)
         {
-            return getSlotPair(obj.word.ptrVal, slotIdx);
+            value_t val;
+            val.tag = defShape->prop_val.tag;
+
+            heapptr_t word_ptr = ((heapptr_t)obj) + offset;
+
+            switch (defShape->field_size)
+            {
+                case 4:
+                val.word.int32 = *(int32_t*)word_ptr;
+                return val;
+
+                case 8:
+                val.word.int32 = *(int64_t*)word_ptr;
+                return val;
+
+                default:
+                assert (false);
+            }
         }
         else
         {
-            auto extTbl = obj_get_next(obj.word.ptrVal);
-            assert (slotIdx < obj_get_cap(extTbl));
-            return getSlotPair(extTbl, slotIdx);
+            assert (false);
         }
     }
 
@@ -842,7 +803,8 @@ value_t object_get_prop(object_t* obj, char* propStr)
     );
     */
 
-    return VAL_FALSE;
+    printf("missing property\n");
+    assert (false);
 }
 
 //============================================================================
