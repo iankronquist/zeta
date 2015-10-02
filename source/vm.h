@@ -33,6 +33,10 @@ typedef uint32_t shapeidx_t;
 #define STR_TBL_MAX_LOAD_NUM    3
 #define STR_TBL_MAX_LOAD_DEN    5
 
+/// Guaranteed minimum object capacity, in bytes
+/// This is the total object size
+#define OBJ_MIN_CAP 128
+
 /// Shape of array objects
 extern shapeidx_t SHAPE_STRING;
 
@@ -102,9 +106,6 @@ typedef struct
     /// Number of strings allocated
     uint32_t num_strings;
 
-    /// Global object
-    object_t* global;
-
     /// Empty object shape
     shape_t* empty_shape;
 
@@ -147,29 +148,25 @@ typedef struct array
 
 } array_t;
 
-/// Type tag known property attribute
-#define ATTR_TAG_KNOWN (1 << 0)
-
-/// Property word known attribute
-#define ATTR_WORD_KNOWN (1 << 1)
+/// Constant property value attribute
+#define ATTR_CST_VAL (1 << 0)
 
 /// Read-only property attribute
-#define ATTR_READ_ONLY (1 << 2)
+#define ATTR_READ_ONLY (1 << 1)
 
 /// Object frozen attribute
 /// Frozen means shape cannot change, read-only and no new properties
-#define ATTR_OBJ_FROZEN (1 << 3)
+#define ATTR_OBJ_FROZEN (1 << 2)
 
 /// Fixed object layout
 /// Shape cannot change, no capacity or next pointer or type tags
-#define ATTR_FIXED_LAYOUT (1 << 4)
+#define ATTR_FIXED_LAYOUT (1 << 3)
 
 /// Default property attributes
 #define ATTR_DEFAULT 0
 
 /*
 Shape node descriptor
-Property tags should immediately follow properties, if unknown
 */
 typedef struct shape
 {
@@ -184,9 +181,9 @@ typedef struct shape
 
     /// Property name
     string_t* prop_name;
- 
-    /// Property value word/tag, if known
-    value_t prop_val;
+
+    /// Constant property word, if known constant
+    word_t cst_word;
 
     /// Offset in bytes for this property
     uint32_t offset;
@@ -196,6 +193,9 @@ typedef struct shape
 
     /// Property/field size in bytes
     uint8_t field_size;
+
+    /// Property type tag, always encoded in the shape
+    tag_t prop_tag;
 
     /// Child shapes
     /// KISS for now, just an array

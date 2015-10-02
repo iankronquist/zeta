@@ -140,7 +140,7 @@ void vm_init()
         vm.empty_shape,
         vm_get_string("shape"),
         TAG_INT64,
-        ATTR_TAG_KNOWN | ATTR_READ_ONLY,
+        ATTR_READ_ONLY,
         sizeof(uint32_t),
         NULL
     );
@@ -150,7 +150,7 @@ void vm_init()
         vm.empty_shape,
         vm_get_string("cap"),
         TAG_INT64,
-        ATTR_TAG_KNOWN | ATTR_READ_ONLY,
+        ATTR_READ_ONLY,
         sizeof(uint32_t),
         NULL
     );
@@ -513,7 +513,7 @@ shape_t* shape_alloc(
 
     shape->prop_name = prop_name;
 
-    shape->prop_val.tag = prop_tag;
+    shape->prop_tag = prop_tag;
 
     shape->attrs = attrs;
 
@@ -663,6 +663,8 @@ shape_t* shape_get_def(shape_t* this, string_t* prop_name)
 
 object_t* object_alloc(uint32_t cap)
 {
+    assert (cap >= OBJ_MIN_CAP);
+
     object_t* obj = (object_t*)vm_alloc(
         sizeof(object_t) + sizeof(word_t) * cap,
         TAG_OBJECT
@@ -706,7 +708,7 @@ bool object_set_prop(
             objShape,
             prop_name,
             value.tag,
-            def_attrs | ATTR_TAG_KNOWN,
+            def_attrs,
             8,
             NULL
         );
@@ -716,15 +718,17 @@ bool object_set_prop(
     }
     else
     {
-        // If the property is not writable, do nothing
+        // If the property is not writable
         if (defShape->attrs & ATTR_READ_ONLY)
         {
-            assert (false);
+            printf("redefining read-only property\n");
+            exit(-1);
         }
 
         // If the value type doesn't match the shape type
-        if (value.tag != defShape->prop_val.tag)
+        if (value.tag != defShape->prop_tag)
         {
+            // Unsupported for now
             assert (false);
 
             /*
@@ -802,10 +806,6 @@ value_t object_get_prop(object_t* obj, string_t* prop_name)
     // If the property is defined
     if (defShape != NULL)
     {
-        // The core interpreter only deals with objects that have
-        // property types encoded in the shape
-        assert (defShape->attrs & ATTR_TAG_KNOWN);
-
         uint32_t offset = defShape->offset;
 
         //printf("read offset=%d, field_size=%d\n", offset, defShape->field_size);
@@ -815,7 +815,7 @@ value_t object_get_prop(object_t* obj, string_t* prop_name)
         assert (offset + defShape->field_size <= obj->cap);
 
         value_t val;
-        val.tag = defShape->prop_val.tag;
+        val.tag = defShape->prop_tag;
 
         heapptr_t word_ptr = ((heapptr_t)obj) + offset;
 
@@ -874,7 +874,7 @@ void test_vm()
     assert (str_foo1 == str_foo2);
 
     // Test object allocation, set prop, get prop
-    object_t* obj = object_alloc(64);
+    object_t* obj = object_alloc(OBJ_MIN_CAP);
     bool set_ret = object_set_prop_val(obj, "foo", VAL_TRUE);
     assert (set_ret);
     assert (obj->shape != vm.empty_shape->idx);
