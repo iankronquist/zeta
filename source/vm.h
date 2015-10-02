@@ -230,6 +230,7 @@ shapeidx_t get_shape(heapptr_t obj);
 
 void vm_init();
 heapptr_t vm_alloc(uint32_t size, shapeidx_t shape);
+string_t* vm_get_string(const char* cstr);
 
 string_t* string_alloc(uint32_t len);
 void string_print(string_t* str);
@@ -247,6 +248,14 @@ shape_t* shape_alloc(
     uint8_t attrs
 );
 shape_t* shape_alloc_empty();
+shape_t* shape_def_prop(
+    shape_t* this,
+    string_t* prop_name,
+    tag_t tag,
+    uint8_t attrs,
+    uint8_t field_size,
+    shape_t* defShape
+);
 
 void test_vm();
 

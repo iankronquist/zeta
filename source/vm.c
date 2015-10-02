@@ -132,6 +132,29 @@ void vm_init()
     vm.empty_shape = shape_alloc_empty();
     assert (vm.empty_shape->idx == 0);
 
+    // TODO: keep some different obj_init_shape?
+    // shape objects themselves do not have a capacity
+
+    // Define the shape index property (present on all objects)
+    vm.empty_shape = shape_def_prop(
+        vm.empty_shape,
+        vm_get_string("shape"),
+        TAG_INT64,
+        ATTR_TAG_KNOWN | ATTR_READ_ONLY,
+        sizeof(uint32_t),
+        NULL
+    );
+
+    // Define the capacity property (present on all objects)
+    vm.empty_shape = shape_def_prop(
+        vm.empty_shape,
+        vm_get_string("cap"),
+        TAG_INT64,
+        ATTR_TAG_KNOWN | ATTR_READ_ONLY,
+        sizeof(uint32_t),
+        NULL
+    );
+
     // TODO: alloc SHAPE_ARRAY
     // for now, the shapes for string and array will just be dummies
 
@@ -501,8 +524,9 @@ shape_t* shape_alloc(
     // Compute the aligned field offset
     if (parent)
     {
-        shape->offset = parent->offset + field_size;
+        shape->offset = parent->offset + parent->field_size;
         uint32_t rem = shape->offset % field_size;
+
         if (rem != 0)
             shape->offset += field_size - rem;
     }
@@ -728,7 +752,7 @@ bool object_set_prop(
 
     // The core interpreter requires all properties to
     // fit within the object capacity (no extension tables)
-    assert (offset < obj->cap);
+    assert (offset + defShape->field_size <= obj->cap);
 
     //printf("write offset=%d, field_size=%d\n", offset, defShape->field_size);
 
@@ -788,7 +812,7 @@ value_t object_get_prop(object_t* obj, string_t* prop_name)
 
         // The core interpreter requires all properties to
         // fit within the object capacity (no extension tables)
-        assert (offset < obj->cap);
+        assert (offset + defShape->field_size <= obj->cap);
 
         value_t val;
         val.tag = defShape->prop_val.tag;
@@ -854,11 +878,13 @@ void test_vm()
     bool set_ret = object_set_prop_val(obj, "foo", VAL_TRUE);
     assert (set_ret);
     assert (obj->shape != vm.empty_shape->idx);
+    bool set_ret2 = object_set_prop_val(obj, "bar", VAL_FALSE);
+    assert (set_ret);
     value_t get_val = object_get_prop(obj, vm_get_string("foo"));
     assert (value_equals(get_val, VAL_TRUE));
 
     // TODO: helper methods, set_prop_int, set_prop_obj
-
+    // wait to see if those are needed
 
 
 }
