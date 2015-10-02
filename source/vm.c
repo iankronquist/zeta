@@ -129,7 +129,7 @@ void vm_init()
     vm.num_strings = 0;
 
     // Allocate the empty object shape
-    vm.empty_shape = shape_alloc(NULL, NULL, 0, 0);
+    vm.empty_shape = shape_alloc(NULL, NULL, 0, 0, 0);
     assert (vm.empty_shape->idx == 0);
 
 
@@ -478,6 +478,7 @@ value_t array_get(array_t* array, uint32_t idx)
 shape_t* shape_alloc(
     shape_t* parent,
     string_t* prop_name,
+    tag_t prop_tag,
     uint8_t numBytes,
     uint8_t attrs
 )
@@ -491,7 +492,9 @@ shape_t* shape_alloc(
 
     shape->prop_name = 0;
 
-    shape->attrs = 0;
+    shape->prop_val.tag = prop_tag;
+
+    shape->attrs = attrs;
 
     shape->children = NULL;
 
@@ -522,9 +525,11 @@ Method to define or redefine a property.
 This may fork the shape tree if redefining a property.
 */
 shape_t* shape_def_prop(
-    const char* propName,
-    //ValType type,
+    shape_t* this,
+    string_t* prop_name,
+    tag_t tag,
     uint8_t attrs,
+    uint8_t field_size,
     shape_t* defShape
 )
 {
@@ -544,25 +549,26 @@ shape_t* shape_def_prop(
     }
     */
 
-    /*
     // If this is a new property addition
     if (defShape == NULL)
     {
         // Create the new shape
-        auto newShape = new ObjShape(
+        shape_t* newShape = shape_alloc(
             defShape? defShape:this,
-            propName,
-            type,
-            attrs
+            prop_name,
+            tag,
+            attrs,
+            field_size
         );
 
         // Add it to the property definitions
-        propDefs[propName][type] ~= newShape;
-        assert (propDefs[propName][type].length > 0);
+        //propDefs[propName][type] ~= newShape;
+        //assert (propDefs[propName][type].length > 0);
 
         return newShape;
     }
-    */
+
+    assert (false);
 
     /*
     // This is redefinition of an existing property
@@ -606,13 +612,13 @@ shape_t* shape_def_prop(
 /**
 Get the shape defining a given property
 */
-shape_t* shape_get_def(shape_t* this, const char* prop_name)
+shape_t* shape_get_def(shape_t* this, string_t* prop_name)
 {
     // For each shape going down the tree, excluding the root
     for (shape_t* shape = this; shape->parent != 0; shape = shape->parent)
     {
         // If the name matches
-        if (strncmp(shape->prop_name->data, prop_name, shape->prop_name->len) == 0)
+        if (shape->prop_name == prop_name)
         {
             // Return the shape
             return shape;
@@ -640,7 +646,7 @@ object_t* object_alloc(uint32_t cap)
 
 bool object_set_prop(
     object_t* obj,
-    const char* prop_name,
+    string_t* prop_name,
     value_t value,
     uint8_t def_attrs
 )
@@ -663,9 +669,11 @@ bool object_set_prop(
 
         // Create a new shape for the property
         defShape = shape_def_prop(
+            objShape,
             prop_name,
-            //valType,
+            value.tag,
             def_attrs,
+            8,
             NULL
         );
 
@@ -742,7 +750,7 @@ bool object_set_prop(
     return true;
 }
 
-value_t object_get_prop(object_t* obj, char* prop_name)
+value_t object_get_prop(object_t* obj, string_t* prop_name)
 {
     // Get the shape from the object
     shape_t* objShape = array_get(vm.shapetbl, obj->shape).word.shape;

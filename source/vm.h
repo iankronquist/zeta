@@ -239,6 +239,7 @@ value_t array_get(array_t* array, uint32_t idx);
 shape_t* shape_alloc(
     shape_t* parent,
     string_t* prop_name,
+    tag_t prop_tag,
     uint8_t numBytes,
     uint8_t attrs
 );
