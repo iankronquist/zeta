@@ -129,20 +129,13 @@ void vm_init()
     vm.num_strings = 0;
 
     // Allocate the empty object shape
-    vm.empty_shape = shape_alloc(NULL, NULL, 0, 0, 0);
+    vm.empty_shape = shape_alloc_empty();
     assert (vm.empty_shape->idx == 0);
-
-
-
 
     // TODO: alloc SHAPE_ARRAY
     // for now, the shapes for string and array will just be dummies
 
-
     // TODO: alloc SHAPE_STRING
-
-
-
 
 }
 
@@ -479,10 +472,12 @@ shape_t* shape_alloc(
     shape_t* parent,
     string_t* prop_name,
     tag_t prop_tag,
-    uint8_t numBytes,
-    uint8_t attrs
+    uint8_t attrs,
+    uint8_t field_size
 )
 {
+    assert (!parent || field_size > 0);
+
     shape_t* shape = (shape_t*)vm_alloc(
         sizeof(shape_t),
         TAG_OBJECT
@@ -496,15 +491,17 @@ shape_t* shape_alloc(
 
     shape->attrs = attrs;
 
+    shape->field_size = field_size;
+
     shape->children = NULL;
 
     // Compute the aligned field offset
     if (parent)
     {
-        shape->offset = parent->offset + numBytes;
-        uint32_t rem = shape->offset % numBytes;
+        shape->offset = parent->offset + field_size;
+        uint32_t rem = shape->offset % field_size;
         if (rem != 0)
-            shape->offset += numBytes - rem;
+            shape->offset += field_size - rem;
     }
     else
     {
@@ -518,6 +515,14 @@ shape_t* shape_alloc(
     array_set_obj(vm.shapetbl, vm.shapetbl->len, (heapptr_t)shape);
 
     return shape;
+}
+
+/**
+Allocate an empty/dummy shape
+*/
+shape_t* shape_alloc_empty()
+{
+    return shape_alloc(NULL, NULL, 0, 0, 0);
 }
 
 /**
@@ -736,6 +741,7 @@ bool object_set_prop(
             break;
 
             default:
+            printf("unsupported field_size: %d\n", defShape->field_size);
             assert (false);
         }
     }
@@ -748,6 +754,19 @@ bool object_set_prop(
 
     // Write successful
     return true;
+}
+
+/**
+Helper to set a property value with default attributes
+*/
+bool object_set_prop_val(object_t* obj, const char* prop_name, value_t value)
+{
+    return object_set_prop(
+        obj,
+        vm_get_string(prop_name),
+        value,
+        ATTR_DEFAULT
+    );
 }
 
 value_t object_get_prop(object_t* obj, string_t* prop_name)
@@ -832,10 +851,14 @@ void test_vm()
     string_t* str_foo2 = vm_get_string("foo");
     assert (str_foo1 == str_foo2);
 
+    // Test object allocation, set prop, get prop
+    object_t* obj = object_alloc(64);
+    bool set_ret = object_set_prop_val(obj, "foo", VAL_TRUE);
+    assert (set_ret);
+
+    // TODO: helper methods, set_prop_int, set_prop_obj
 
 
-    // TODO: test object alloc, set prop, get prop
-    // two properties
 
 }
 

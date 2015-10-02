@@ -164,6 +164,9 @@ typedef struct array
 /// Shape cannot change, no capacity or next pointer or type tags
 #define ATTR_FIXED_LAYOUT (1 << 4)
 
+/// Default property attributes
+#define ATTR_DEFAULT 0
+
 /*
 Shape node descriptor
 Property tags should immediately follow properties, if unknown
@@ -243,6 +246,7 @@ shape_t* shape_alloc(
     uint8_t numBytes,
     uint8_t attrs
 );
+shape_t* shape_alloc_empty();
 
 void test_vm();
 

@@ -1,3 +1,13 @@
+/**
+Zeta core parser implementation
+
+This parser is used to parse the runtime library, the self-hosted Zeta parser
+and the Zeta JIT compiler.
+
+The AST node structs are mapped onto objects accessible from the Zeta
+language.
+*/
+
 #ifndef __PARSER_H__
 #define __PARSER_H__
 
