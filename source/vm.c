@@ -141,9 +141,10 @@ void vm_init()
         vm_get_string("shape"),
         TAG_INT64,
         ATTR_READ_ONLY,
-        sizeof(uint32_t),
+        FIELD_SIZEOF(object_t, shape),
         NULL
     );
+    assert (vm.empty_shape->offset == 0);
 
     // Define the capacity property (present on all objects)
     vm.empty_shape = shape_def_prop(
@@ -151,9 +152,10 @@ void vm_init()
         vm_get_string("cap"),
         TAG_INT64,
         ATTR_READ_ONLY,
-        sizeof(uint32_t),
+        FIELD_SIZEOF(object_t, cap),
         NULL
     );
+    assert (vm.empty_shape->offset == FIELD_SIZEOF(object_t, shape));
 
     // TODO: alloc SHAPE_ARRAY
     // for now, the shapes for string and array will just be dummies

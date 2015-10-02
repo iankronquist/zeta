@@ -5,6 +5,9 @@
 #include <stdint.h>
 #include <stdbool.h>
 
+/// Macro to get the size of a struct field
+#define FIELD_SIZEOF(STRUCT, FIELD) (sizeof(((STRUCT*)0)->FIELD))
+
 /// Heap object pointer
 typedef uint8_t* heapptr_t;
 
