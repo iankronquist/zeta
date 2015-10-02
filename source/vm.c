@@ -189,11 +189,13 @@ string_t* string_alloc(uint32_t len)
 
 void string_print(string_t* str)
 {
+    assert (str != NULL);
+
     for (size_t i = 0; i < str->len; ++i)
         putchar(str->data[i]);
 }
 
-bool string_eq(string_t* stra, string_t* strb)
+bool string_equals(string_t* stra, string_t* strb)
 {
     if (stra->len != strb->len)
         return false;
@@ -275,7 +277,7 @@ string_t* vm_get_tbl_str(string_t* str)
         }
 
         // If this is the string we want
-        if (string_eq(strVal, str))
+        if (string_equals(strVal, str))
         {
             // Return a reference to the string we found in the table
             return strVal;
@@ -477,6 +479,7 @@ shape_t* shape_alloc(
 )
 {
     assert (!parent || field_size > 0);
+    assert (!parent || prop_name != NULL);
 
     shape_t* shape = (shape_t*)vm_alloc(
         sizeof(shape_t),
@@ -485,7 +488,7 @@ shape_t* shape_alloc(
 
     shape->parent = parent;
 
-    shape->prop_name = 0;
+    shape->prop_name = prop_name;
 
     shape->prop_val.tag = prop_tag;
 
@@ -673,11 +676,13 @@ bool object_set_prop(
         }
 
         // Create a new shape for the property
+        // Note: the interpreter requires that the tag
+        // be encoded in the shape
         defShape = shape_def_prop(
             objShape,
             prop_name,
             value.tag,
-            def_attrs,
+            def_attrs | ATTR_TAG_KNOWN,
             8,
             NULL
         );
@@ -830,8 +835,10 @@ value_t object_get_prop(object_t* obj, string_t* prop_name)
     );
     */
 
-    printf("missing property\n");
-    assert (false);
+    printf("missing property: \"");
+    string_print(prop_name);
+    printf("\"\n");
+    exit(-1);
 }
 
 //============================================================================
@@ -855,6 +862,9 @@ void test_vm()
     object_t* obj = object_alloc(64);
     bool set_ret = object_set_prop_val(obj, "foo", VAL_TRUE);
     assert (set_ret);
+    assert (obj->shape != vm.empty_shape->idx);
+    value_t get_val = object_get_prop(obj, vm_get_string("foo"));
+    assert (value_equals(get_val, VAL_TRUE));
 
     // TODO: helper methods, set_prop_int, set_prop_obj
 
