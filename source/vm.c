@@ -726,34 +726,26 @@ bool object_set_prop(
 
     uint32_t offset = defShape->offset;
 
-    // Get the object capacity in bytes
-    uint32_t objCap = obj->cap;
-    assert (objCap > 0);
+    // The core interpreter requires all properties to
+    // fit within the object capacity (no extension tables)
+    assert (offset < obj->cap);
 
-    // If the slot is within the object
-    if (offset < objCap)
+    //printf("write offset=%d, field_size=%d\n", offset, defShape->field_size);
+
+    heapptr_t word_ptr = ((heapptr_t)obj) + offset;
+
+    switch (defShape->field_size)
     {
-        heapptr_t word_ptr = ((heapptr_t)obj) + offset;
+        case 4:
+        *(int32_t*)word_ptr = value.word.int32;
+        break;
 
-        switch (defShape->field_size)
-        {
-            case 4:
-            *(int32_t*)word_ptr = value.word.int32;
-            break;
+        case 8:
+        *(int64_t*)word_ptr = value.word.int64;
+        break;
 
-            case 8:
-            *(int64_t*)word_ptr = value.word.int64;
-            break;
-
-            default:
-            printf("unsupported field_size: %d\n", defShape->field_size);
-            assert (false);
-        }
-    }
-
-    // The property is past the object's capacity
-    else 
-    {
+        default:
+        printf("unsupported field_size: %d\n", defShape->field_size);
         assert (false);
     }
 
@@ -792,29 +784,28 @@ value_t object_get_prop(object_t* obj, string_t* prop_name)
 
         uint32_t offset = defShape->offset;
 
-        if (offset < obj->cap)
+        //printf("read offset=%d, field_size=%d\n", offset, defShape->field_size);
+
+        // The core interpreter requires all properties to
+        // fit within the object capacity (no extension tables)
+        assert (offset < obj->cap);
+
+        value_t val;
+        val.tag = defShape->prop_val.tag;
+
+        heapptr_t word_ptr = ((heapptr_t)obj) + offset;
+
+        switch (defShape->field_size)
         {
-            value_t val;
-            val.tag = defShape->prop_val.tag;
+            case 4:
+            val.word.int32 = *(int32_t*)word_ptr;
+            return val;
 
-            heapptr_t word_ptr = ((heapptr_t)obj) + offset;
+            case 8:
+            val.word.int64 = *(int64_t*)word_ptr;
+            return val;
 
-            switch (defShape->field_size)
-            {
-                case 4:
-                val.word.int32 = *(int32_t*)word_ptr;
-                return val;
-
-                case 8:
-                val.word.int32 = *(int64_t*)word_ptr;
-                return val;
-
-                default:
-                assert (false);
-            }
-        }
-        else
-        {
+            default:
             assert (false);
         }
     }
