@@ -157,11 +157,12 @@ void vm_init()
     );
     assert (vm.empty_shape->offset == FIELD_SIZEOF(object_t, shape));
 
-    // TODO: alloc SHAPE_ARRAY
-    // for now, the shapes for string and array will just be dummies
-
-    // TODO: alloc SHAPE_STRING
-
+    // Allocate the array and string shapes
+    vm.array_shape = shape_alloc_empty();
+    SHAPE_ARRAY = vm.array_shape->idx;
+    vm.string_shape = shape_alloc_empty();
+    SHAPE_STRING = vm.string_shape->idx;
+    assert (SHAPE_ARRAY != SHAPE_STRING);
 }
 
 /**

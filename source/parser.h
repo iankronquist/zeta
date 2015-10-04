@@ -24,7 +24,6 @@ extern shapeidx_t SHAPE_AST_SEQ;
 extern shapeidx_t SHAPE_AST_IF;
 extern shapeidx_t SHAPE_AST_CALL;
 extern shapeidx_t SHAPE_AST_FUN;
-extern shapeidx_t SHAPE_RUN_ERR;
 
 /**
 Source position information

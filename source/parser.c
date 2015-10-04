@@ -19,7 +19,6 @@ shapeidx_t SHAPE_AST_SEQ;
 shapeidx_t SHAPE_AST_IF;
 shapeidx_t SHAPE_AST_CALL;
 shapeidx_t SHAPE_AST_FUN;
-shapeidx_t SHAPE_RUN_ERR;
 
 /**
 Initialize data needed by the Zeta core parser
@@ -36,7 +35,6 @@ void parser_init()
     SHAPE_AST_IF = shape_alloc_empty()->idx;
     SHAPE_AST_CALL = shape_alloc_empty()->idx;
     SHAPE_AST_FUN = shape_alloc_empty()->idx;
-    SHAPE_RUN_ERR = shape_alloc_empty()->idx;
 
 
 

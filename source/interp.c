@@ -53,8 +53,6 @@ value_t eval_expr(heapptr_t expr)
         return value_from_heapptr(expr, TAG_STRING);
     }
 
-    // FIXME
-    /*
     // Array literal expression
     if (shape == SHAPE_ARRAY)
     {
@@ -71,7 +69,6 @@ value_t eval_expr(heapptr_t expr)
 
         return value_from_heapptr((heapptr_t)val_array, TAG_ARRAY);
     }
-    */
 
     // Binary operator (e.g. a + b)
     if (shape == SHAPE_AST_BINOP)
@@ -283,7 +280,6 @@ void test_interp()
     test_eval_true("true");
     test_eval_false("false");
 
-    /*
     // Arithmetic
     test_eval_int("3 + 2 * 5", 13);
     test_eval_int("-7", -7);
@@ -310,6 +306,7 @@ void test_interp()
     test_eval_int("{ 2 3 }", 3);
     test_eval_int("{ 2 3+7 }", 10);
 
+    /*
     // If expression
     test_eval_int("if true then 1 else 0", 1);
     test_eval_int("if false then 1 else 0", 0);
@@ -320,6 +317,7 @@ void test_interp()
     test_eval_int("if '' then 777 else 0", 0);
     test_eval_int("if not true then 1 else 0", 0);
     */
+
 
 
 

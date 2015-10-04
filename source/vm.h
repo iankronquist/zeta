@@ -41,7 +41,7 @@ typedef uint32_t shapeidx_t;
 #define OBJ_MIN_CAP 128
 
 /// Shape of array objects
-extern shapeidx_t SHAPE_STRING;
+extern shapeidx_t SHAPE_ARRAY;
 
 /// Shape of string objects
 extern shapeidx_t SHAPE_STRING;
@@ -111,6 +111,12 @@ typedef struct
 
     /// Empty object shape
     shape_t* empty_shape;
+
+    /// Array shape
+    shape_t* array_shape;
+
+    /// String shape
+    shape_t* string_shape;
 
 } vm_t;
 
