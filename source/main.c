@@ -114,6 +114,7 @@ void run_repl()
 int main(int argc, char** argv)
 {
     vm_init();
+    parser_init();
 
     // Test mode
     if (argc == 2 && strcmp(argv[1], "--test") == 0)
