@@ -31,6 +31,7 @@ bool eval_truth(value_t value)
         return value.word.int8 != 0;
 
         default:
+        printf("cannot use value as boolean\n");
         exit(-1);
     }
 }
@@ -306,17 +307,13 @@ void test_interp()
     test_eval_int("{ 2 3 }", 3);
     test_eval_int("{ 2 3+7 }", 10);
 
-    /*
     // If expression
     test_eval_int("if true then 1 else 0", 1);
     test_eval_int("if false then 1 else 0", 0);
     test_eval_int("if 0 < 10 then 7 else 3", 7);
-    test_eval_int("if 0 then 1 else 0", 0);
-    test_eval_int("if 1 then 777", 777);
-    test_eval_int("if 'abc' then 777", 777);
-    test_eval_int("if '' then 777 else 0", 0);
+    //test_eval_int("if 'abc' then 777", 777);
+    //test_eval_int("if '' then 777 else 0", 0);
     test_eval_int("if not true then 1 else 0", 0);
-    */
 
 
 
