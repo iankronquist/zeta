@@ -418,12 +418,10 @@ heapptr_t parse_string(input_t* input, char endCh)
         }
     }
 
-    string_t* str = string_alloc(len);
+    buf[len] = '\0';
 
-    // Copy the characters
-    strncpy(str->data, buf, len);
-
-    return (heapptr_t)str;
+    // Get the interned version of this string
+    return (heapptr_t)vm_get_cstr(buf);
 }
 
 /**

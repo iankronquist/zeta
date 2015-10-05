@@ -297,6 +297,10 @@ void test_interp()
     test_eval_true("not not true");
     test_eval_true("true == true");
     test_eval_false("true == false");
+    test_eval_true("'foo' == 'foo'");
+    test_eval_false("'foo' == 'bar'");
+    test_eval_true("'f' != 'b'");
+    test_eval_false("'f' != 'f'");
 
     // Arrays
     test_eval_int("[7][0]", 7);
@@ -311,8 +315,6 @@ void test_interp()
     test_eval_int("if true then 1 else 0", 1);
     test_eval_int("if false then 1 else 0", 0);
     test_eval_int("if 0 < 10 then 7 else 3", 7);
-    //test_eval_int("if 'abc' then 777", 777);
-    //test_eval_int("if '' then 777 else 0", 0);
     test_eval_int("if not true then 1 else 0", 0);
 
 

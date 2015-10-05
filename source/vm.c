@@ -138,7 +138,7 @@ void vm_init()
     // Define the shape index property (present on all objects)
     vm.empty_shape = shape_def_prop(
         vm.empty_shape,
-        vm_get_string("shape"),
+        vm_get_cstr("shape"),
         TAG_INT64,
         ATTR_READ_ONLY,
         FIELD_SIZEOF(object_t, shape),
@@ -149,7 +149,7 @@ void vm_init()
     // Define the capacity property (present on all objects)
     vm.empty_shape = shape_def_prop(
         vm.empty_shape,
-        vm_get_string("cap"),
+        vm_get_cstr("cap"),
         TAG_INT64,
         ATTR_READ_ONLY,
         FIELD_SIZEOF(object_t, cap),
@@ -424,9 +424,9 @@ void extStrTable(heapptr_t curTbl, uint32_t curSize, uint32_t numStrings)
 */
 
 /**
-Get the interned string object for a given character string
+Get the interned string object for a given C string
 */
-string_t* vm_get_string(const char* cstr)
+string_t* vm_get_cstr(const char* cstr)
 {
     string_t* str = string_alloc(strlen(cstr));
 
@@ -791,7 +791,7 @@ bool object_set_prop_val(object_t* obj, const char* prop_name, value_t value)
 {
     return object_set_prop(
         obj,
-        vm_get_string(prop_name),
+        vm_get_cstr(prop_name),
         value,
         ATTR_DEFAULT
     );
@@ -869,11 +869,11 @@ void test_vm()
     assert (sizeof(value_t) == 16);
 
     // Test the string table
-    string_t* str_foo1 = vm_get_string("foo");
+    string_t* str_foo1 = vm_get_cstr("foo");
     assert (str_foo1->len == 3);
     assert (strncmp(str_foo1->data, "foo", str_foo1->len) == 0);
-    string_t* str_bar = vm_get_string("bar");
-    string_t* str_foo2 = vm_get_string("foo");
+    string_t* str_bar = vm_get_cstr("bar");
+    string_t* str_foo2 = vm_get_cstr("foo");
     assert (str_foo1 == str_foo2);
 
     // Test object allocation, set prop, get prop
@@ -883,7 +883,7 @@ void test_vm()
     assert (obj->shape != vm.empty_shape->idx);
     bool set_ret2 = object_set_prop_val(obj, "bar", VAL_FALSE);
     assert (set_ret);
-    value_t get_val = object_get_prop(obj, vm_get_string("foo"));
+    value_t get_val = object_get_prop(obj, vm_get_cstr("foo"));
     assert (value_equals(get_val, VAL_TRUE));
 
     // TODO: helper methods, set_prop_int, set_prop_obj
