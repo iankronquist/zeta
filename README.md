@@ -53,7 +53,7 @@ Planned features of the zeta programming language include:
 
 - The ability to suspend and resume running programs
 
-Zeta takes inspiration from JavaScript, but there notable differences include:
+Zeta takes inspiration from JavaScript, but notable differences include:
 
 - No `undefined` or `null` values
 
@@ -67,7 +67,7 @@ Zeta takes inspiration from JavaScript, but there notable differences include:
 
 - Global variables are not shared among different source files
 
-- The eval function cannot access local variables
+- The `eval` function cannot access local variables
 
 - A distinction between `print` and `println` functions
 
