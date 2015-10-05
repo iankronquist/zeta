@@ -37,8 +37,6 @@ Planned features of the zeta programming language include:
 
 - Garbage collection
 
-- Separate integer and floating-point types (both 64-bit)
-
 - Dynamically extensible objects with prototypal inheritance, as in JavaScript
 
 - No distinction between statements and expression, everything is an expression, as in LISP
@@ -54,6 +52,24 @@ Planned features of the zeta programming language include:
 - A very easy to use canvas library to render simple 2D graphics and make simple UIs
 
 - The ability to suspend and resume running programs
+
+Zeta takes inspiration from JavaScript, but there notable differences include:
+
+- No `undefined` or `null` values
+
+- Object properties cannot be deleted
+
+- Attempting to read missing object properties throws an exception
+
+- Distinct 64-bit integer and floating-point value types
+
+- Arithmetic operators do not accept strings as input values
+
+- Global variables are not shared among different source files
+
+- The eval function cannot access local variables
+
+- A distinction between `print` and `println` functions
 
 ## Zeta Core Language Syntax
 
