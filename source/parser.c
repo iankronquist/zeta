@@ -323,6 +323,13 @@ heapptr_t parse_ident(input_t* input)
     size_t startIdx = input->idx;
     size_t len = 0;
 
+    char firstCh = input_peek_ch(input);
+
+    if (firstCh != '_' &&
+        firstCh != '$' &&
+        !isalpha(firstCh))
+        return NULL;
+
     for (;;)
     {
         char ch = input_peek_ch(input);
@@ -811,7 +818,7 @@ heapptr_t parse_atom(input_t* input)
     // Identifiers beginning with non-alphanumeric characters
     if (input_peek_ch(input) == '_' ||
         input_peek_ch(input) == '$' ||
-        isalnum(input_peek_ch(input)))
+        isalpha(input_peek_ch(input)))
     {
         return ast_ref_alloc(parse_ident(input));
     }
@@ -1080,8 +1087,8 @@ void test_parser()
     // Member expression
     test_parse_expr("a.b");
     test_parse_expr("a.b + c");
-    test_parse_expr("$runtime.0.add");
-    test_parse_expr("$api.file.2.fopen");
+    test_parse_expr("$runtime.v0.add");
+    test_parse_expr("$api.file.v2.fopen");
     test_parse_expr_fail("a.'b'");
 
     // Array indexing
@@ -1117,6 +1124,7 @@ void test_parser()
     test_parse_expr("x = y = 1");
     test_parse_expr_fail("var");
     test_parse_expr_fail("var +");
+    test_parse_expr_fail("var 3");
 
     // Call expressions
     test_parse_expr("a()");
@@ -1141,11 +1149,12 @@ void test_parser()
     test_parse_expr_fail("fun (x+y) y");
 
     // Fibonacci
-    test_parse_expr("fib = fun (n) if n < 2 then n else fib(n-1) + fib(n-2)");
+    test_parse_expr("var fib = fun (n) if n < 2 then n else fib(n-1) + fib(n-2)");
 
     // Sequence/block expression
     test_parse_expr("{ a b }");
     test_parse_expr("fun (x) { println(x) println(y) }");
+    test_parse_expr("fun (x) { var y = x + 1 print(y) }");
     test_parse_expr("if (x) then { println(x) } else { println(y) z }");
     test_parse_expr_fail("{ a, b }");
 
