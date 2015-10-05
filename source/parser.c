@@ -13,6 +13,7 @@
 /// These are initialized in init_parser(), see parser.c
 shapeidx_t SHAPE_AST_CONST;
 shapeidx_t SHAPE_AST_REF;
+shapeidx_t SHAPE_AST_VAR;
 shapeidx_t SHAPE_AST_BINOP;
 shapeidx_t SHAPE_AST_UNOP;
 shapeidx_t SHAPE_AST_SEQ;
@@ -29,6 +30,7 @@ void parser_init()
     // Just dummy shapes for now
     SHAPE_AST_CONST = shape_alloc_empty()->idx;
     SHAPE_AST_REF = shape_alloc_empty()->idx;
+    SHAPE_AST_VAR = shape_alloc_empty()->idx;
     SHAPE_AST_BINOP = shape_alloc_empty()->idx;
     SHAPE_AST_UNOP = shape_alloc_empty()->idx;
     SHAPE_AST_SEQ = shape_alloc_empty()->idx;
@@ -198,9 +200,22 @@ heapptr_t ast_const_alloc(value_t val)
 /// Allocate a reference node
 heapptr_t ast_ref_alloc(heapptr_t name_str)
 {
-   ast_ref_t* node = (ast_ref_t*)vm_alloc(
+    ast_ref_t* node = (ast_ref_t*)vm_alloc(
         sizeof(ast_ref_t),
         SHAPE_AST_REF
+    );
+    assert (get_shape(name_str) == SHAPE_STRING);
+    node->name_str = (string_t*)name_str;
+    node->idx = 0xFFFFFFFF;
+    return (heapptr_t)node;
+}
+
+/// Allocate a variable declaration node
+heapptr_t ast_var_alloc(heapptr_t name_str)
+{
+    ast_var_t* node = (ast_var_t*)vm_alloc(
+        sizeof(ast_var_t),
+        SHAPE_AST_VAR
     );
     assert (get_shape(name_str) == SHAPE_STRING);
     node->name_str = (string_t*)name_str;
@@ -725,7 +740,7 @@ heapptr_t parse_atom(input_t* input)
         heapptr_t expr = parse_expr(input);
         if (expr == NULL)
         {
-            printf("expected expression after '('\n");
+            input->error_str = "expected expression after '('\n";
             return NULL;
         }
 
@@ -762,6 +777,22 @@ heapptr_t parse_atom(input_t* input)
     // Identifier
     if (isalnum(input_peek_ch(input)))
     {
+        // Variable declaration
+        if (input_match_str(input, "var"))
+        {
+            input_eat_ws(input);
+
+            heapptr_t ident = parse_ident(input);
+
+            if (ident == NULL)
+            {
+                input->error_str = "expected identifier in member expression";
+                return NULL;
+            }
+
+            return ast_ref_alloc(ident);
+        }
+
         // If expression
         if (input_match_str(input, "if"))
             return parse_if_expr(input);
@@ -1032,6 +1063,7 @@ void test_parser()
     test_parse_expr("a + b - c");
     test_parse_expr("a + b * c + d");
     test_parse_expr("a or b or c");
+    test_parse_expr("(a)");
     test_parse_expr("(a + b)");
     test_parse_expr("(a + (b + c))");
     test_parse_expr("((a + b) + c)");
@@ -1041,6 +1073,7 @@ void test_parser()
     test_parse_expr_fail("a # b");
     test_parse_expr_fail("a +");
     test_parse_expr_fail("a + b # c");
+    test_parse_expr_fail("(a");
     test_parse_expr_fail("(a + b))");
     test_parse_expr_fail("((a + b)");
 
@@ -1076,10 +1109,14 @@ void test_parser()
     test_parse_expr_fail("if x then a b");
 
     // Assignment
+    test_parse_expr("var x");
+    test_parse_expr("var x = 3");
     test_parse_expr("x = 1");
     test_parse_expr("x = -1");
     test_parse_expr("a.b = x + y");
     test_parse_expr("x = y = 1");
+    test_parse_expr_fail("var");
+    test_parse_expr_fail("var +");
 
     // Call expressions
     test_parse_expr("a()");
