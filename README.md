@@ -87,22 +87,27 @@ not part of the core language. The advantage here is that the core VM will not
 need to know anything about things such as regular expressions, and multiple
 competing regular expression packages can be implemented for Zeta.
 
-Here is an example snippet of what Zeta code might look like:
+Here is an example of what Zeta code might look like:
 
 ```
-// Load/import the standard IO module
-// Modules are simple objects with properties
+/*
+Load/import the standard IO module
+Modules are simple objects with properties
+*/
 io = import("io")
 
 io.println("This is an example Zeta script");
 
 // Fibonacci function
-fib = fun (n) if n < 1 then n else fib(n-1) + fib(n-1)
+let fib = fun (n) if n < 1 then n else fib(n-1) + fib(n-1)
 
-/* Compute the meaning of life and print out the answer */
+// Compute the meaning of life and print out the answer
 io.println(fib(42))
 
-foo = fun (n)
+// This is a global variable declaration
+var y;
+
+let foo = fun (n)
 {
     io.println("It's also possible to execute expressions in sequence");
     io.println("inside blocks with curly braces.");
@@ -118,24 +123,14 @@ foo = fun (n)
         io.println("n is greater than or equal to 1")
     }
 
-    // Local variables are declared by directly assigning to them
-    x = 7 + 1
+    // This is a local constant declaration, x cannot be reassigned to
+    let x = 7 + 1
 
-    /*
-    The variable "unit" refers to this script or code unit, the scope of
-    this unit is an object. To assign to the global scope, we need to do
-    the following:
-    */
-    unit.y = 3
-
-    // Global variables are resolved as you would expect, here z is 3.
-    z = y
-
-    // This creates a local y which is equal to 4, but the global y remains 3
-    y = y + 1
+    // This assigns to the global variable y
+    y = 3
 
     // We can also create anonymous closures
-    bar = fun () x
+    let bar = fun () x + y
 
     // This function returns the closure bar, the last expression we
     // have evaluated
@@ -150,10 +145,8 @@ obj = { x:3, y:5 }
 obj.method = fun (this, x) this.x = x
 
 // Make the fib and foo functions available to other modules.
-// If anyone imports this module, they will be getting a reference
-// To the "exports" object we are writing to here:
-exports.fib = fib
-exports.foo = foo
+export(fib, 'fib')
+export(foo, 'foo')
 ```
 
 Everything is still in flux. Your comments on the syntax and above
