@@ -63,6 +63,8 @@ Zeta takes inspiration from JavaScript, but notable differences include:
 
 - Distinct 64-bit integer and floating-point value types
 
+- 64-bit integers overflow as part of normal semantics
+
 - Arithmetic operators do not accept strings as input values
 
 - Global variables are not shared among different source files
