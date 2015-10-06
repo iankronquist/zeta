@@ -18,7 +18,7 @@ language.
 /// These are initialized in init_parser(), see parser.c
 extern shapeidx_t SHAPE_AST_CONST;
 extern shapeidx_t SHAPE_AST_REF;
-extern shapeidx_t SHAPE_AST_VAR;
+extern shapeidx_t SHAPE_AST_DECL;
 extern shapeidx_t SHAPE_AST_BINOP;
 extern shapeidx_t SHAPE_AST_UNOP;
 extern shapeidx_t SHAPE_AST_SEQ;
@@ -84,7 +84,7 @@ typedef struct
 } ast_ref_t;
 
 /**
-Variable declaration node
+Variable/constant declaration node
 */
 typedef struct
 {
@@ -96,7 +96,10 @@ typedef struct
     /// Local index
     uint32_t idx;
 
-} ast_var_t;
+    /// Constant flag
+    bool cst;
+
+} ast_decl_t;
 
 /**
 Operator information structure

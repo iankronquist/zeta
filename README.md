@@ -57,6 +57,8 @@ Zeta takes inspiration from JavaScript, but notable differences include:
 
 - No `undefined` or `null` values
 
+- No `new` keyword or constructor functions
+
 - Object properties cannot be deleted
 
 - Attempting to read missing object properties throws an exception
@@ -72,6 +74,10 @@ Zeta takes inspiration from JavaScript, but notable differences include:
 - The `eval` function cannot access local variables
 
 - A distinction between `print` and `println` functions
+
+If you want to know more about my views on programming language design, I've
+written several
+[blog posts on the topic](http://pointersgonewild.com/category/programming-languages/).
 
 ## Zeta Core Language Syntax
 

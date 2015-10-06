@@ -13,7 +13,7 @@
 /// These are initialized in init_parser(), see parser.c
 shapeidx_t SHAPE_AST_CONST;
 shapeidx_t SHAPE_AST_REF;
-shapeidx_t SHAPE_AST_VAR;
+shapeidx_t SHAPE_AST_DECL;
 shapeidx_t SHAPE_AST_BINOP;
 shapeidx_t SHAPE_AST_UNOP;
 shapeidx_t SHAPE_AST_SEQ;
@@ -30,7 +30,7 @@ void parser_init()
     // Just dummy shapes for now
     SHAPE_AST_CONST = shape_alloc_empty()->idx;
     SHAPE_AST_REF = shape_alloc_empty()->idx;
-    SHAPE_AST_VAR = shape_alloc_empty()->idx;
+    SHAPE_AST_DECL = shape_alloc_empty()->idx;
     SHAPE_AST_BINOP = shape_alloc_empty()->idx;
     SHAPE_AST_UNOP = shape_alloc_empty()->idx;
     SHAPE_AST_SEQ = shape_alloc_empty()->idx;
@@ -210,16 +210,17 @@ heapptr_t ast_ref_alloc(heapptr_t name_str)
     return (heapptr_t)node;
 }
 
-/// Allocate a variable declaration node
-heapptr_t ast_var_alloc(heapptr_t name_str)
+/// Allocate a declaration node
+heapptr_t ast_decl_alloc(heapptr_t name_str, bool cst)
 {
-    ast_var_t* node = (ast_var_t*)vm_alloc(
-        sizeof(ast_var_t),
-        SHAPE_AST_VAR
+    ast_decl_t* node = (ast_decl_t*)vm_alloc(
+        sizeof(ast_decl_t),
+        SHAPE_AST_DECL
     );
     assert (get_shape(name_str) == SHAPE_STRING);
     node->name_str = (string_t*)name_str;
     node->idx = 0xFFFFFFFF;
+    node->cst = cst;
     return (heapptr_t)node;
 }
 
@@ -784,6 +785,7 @@ heapptr_t parse_atom(input_t* input)
     // Identifier
     if (isalnum(input_peek_ch(input)))
     {
+        // TODO: move this to parse_var_decl and parse_cst_decl
         // Variable declaration
         if (input_match_str(input, "var"))
         {
@@ -797,8 +799,13 @@ heapptr_t parse_atom(input_t* input)
                 return NULL;
             }
 
-            return ast_ref_alloc(ident);
+            return ast_decl_alloc(ident, false);
         }
+
+        // TODO
+        // Constant declaration
+        if (input_match_str(input, "let"))
+            return NULL;
 
         // If expression
         if (input_match_str(input, "if"))
