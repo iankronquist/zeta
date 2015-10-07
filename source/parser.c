@@ -1021,8 +1021,43 @@ heapptr_t parse_expr(input_t* input)
     return parse_expr_prec(input, 0);
 }
 
-/// Test that the parsing of an expression succeeds
-void test_parse_expr(char* cstr)
+/// Parse a source unit
+heapptr_t parse_unit(input_t* input)
+{
+    // Allocate an array with an initial capacity
+    array_t* arr = array_alloc(32);
+
+    // Until the end of the input is reached
+    for (;;)
+    {
+        // Parse one expression
+        heapptr_t expr = parse_expr(input);
+
+        if (expr == NULL)
+        {
+            return NULL;
+        }
+
+        // Write the expression to the array
+        array_set_obj(arr, arr->len, expr);
+
+        // If this is the end of the input, stop
+        input_eat_ws(input);
+        if (input_eof(input))
+            break;
+    }
+
+    // Create a sequence expression from the expression list
+    heapptr_t seq_expr = ast_seq_alloc(arr);
+
+    // Create an empty array for the parameter list
+    array_t* param_list = array_alloc(0);
+
+    return (heapptr_t)ast_fun_alloc(param_list, seq_expr);
+}
+
+/// Test that the parsing of a source unit succeeds
+void test_parse(char* cstr)
 {
     //printf("%s\n", cstr);
 
@@ -1030,14 +1065,14 @@ void test_parse_expr(char* cstr)
     strcpy(str->data, cstr);
     input_t input = input_from_string(str);
 
-    heapptr_t expr = parse_expr(&input);
+    heapptr_t expr = parse_unit(&input);
 
     // Consume any remaining whitespace
     input_eat_ws(&input);
 
     if (!expr)
     {
-        printf("failed to produce an expression from:\n\"%s\"\n", cstr);
+        printf("failed to parse:\n\"%s\"\n", cstr);
         exit(-1);
     }
 
@@ -1052,8 +1087,8 @@ void test_parse_expr(char* cstr)
     }
 }
 
-/// Test that the parsing of an expression fails
-void test_parse_expr_fail(char* cstr)
+/// Test that the parsing of a source unit fails
+void test_parse_fail(char* cstr)
 {
     //printf("%s\n", cstr);
 
@@ -1061,7 +1096,7 @@ void test_parse_expr_fail(char* cstr)
     strcpy(str->data, cstr);
     input_t input = input_from_string(str);
 
-    heapptr_t expr = parse_expr(&input);
+    heapptr_t expr = parse_unit(&input);
 
     // Consume any remaining whitespace
     input_eat_ws(&input);
@@ -1077,143 +1112,144 @@ void test_parse_expr_fail(char* cstr)
 void test_parser()
 {
     // Identifiers
-    test_parse_expr("foobar");
-    test_parse_expr("  foo_bar  ");
-    test_parse_expr("  foo_bar  ");
-    test_parse_expr("_foo");
-    test_parse_expr("$foo");
-    test_parse_expr("$foo52");
+    test_parse("foobar");
+    test_parse("  foo_bar  ");
+    test_parse("  foo_bar  ");
+    test_parse("_foo");
+    test_parse("$foo");
+    test_parse("$foo52");
 
     // Literals
-    test_parse_expr("123");
-    test_parse_expr("0xFF");
-    test_parse_expr("0b101");
-    test_parse_expr("'abc'");
-    test_parse_expr("\"double-quoted string!\"");
-    test_parse_expr("\"double-quoted string, 'hi'!\"");
-    test_parse_expr("'hi' // comment");
-    test_parse_expr("'hi'");
-    test_parse_expr("'new\\nline'");
-    test_parse_expr("true");
-    test_parse_expr("false");
-    test_parse_expr_fail("'invalid\\iesc'");
-    test_parse_expr_fail("'str' []");
+    test_parse("123");
+    test_parse("0xFF");
+    test_parse("0b101");
+    test_parse("'abc'");
+    test_parse("\"double-quoted string!\"");
+    test_parse("\"double-quoted string, 'hi'!\"");
+    test_parse("'hi' // comment");
+    test_parse("'hi'");
+    test_parse("'new\\nline'");
+    test_parse("true");
+    test_parse("false");
+    test_parse_fail("'invalid\\iesc'");
+    test_parse_fail("'str' []");
 
     // Array literals
-    test_parse_expr("[]");
-    test_parse_expr("[1]");
-    test_parse_expr("[1,a]");
-    test_parse_expr("[1 , a]");
-    test_parse_expr("[1,a, ]");
-    test_parse_expr("[ 1,\na ]");
-    test_parse_expr_fail("[,]");
+    test_parse("[]");
+    test_parse("[1]");
+    test_parse("[1,a]");
+    test_parse("[1 , a]");
+    test_parse("[1,a, ]");
+    test_parse("[ 1,\na ]");
+    test_parse_fail("[,]");
 
     // Comments
-    test_parse_expr("1 // comment");
-    test_parse_expr("[ 1//comment\n,a ]");
-    test_parse_expr("1 /* comment */ + x");
-    test_parse_expr("1 /* // comment */ + x");
-    test_parse_expr_fail("1 // comment\n#1");
-    test_parse_expr_fail("1 /* */ */");
+    test_parse("1 // comment");
+    test_parse("[ 1//comment\n,a ]");
+    test_parse("1 /* comment */ + x");
+    test_parse("1 /* // comment */ + x");
+    test_parse_fail("1 // comment\n#1");
+    test_parse_fail("1 /* */ */");
 
     // Arithmetic expressions
-    test_parse_expr("a + b");
-    test_parse_expr("a + b + c");
-    test_parse_expr("a + b - c");
-    test_parse_expr("a + b * c + d");
-    test_parse_expr("a or b or c");
-    test_parse_expr("(a)");
-    test_parse_expr("(a + b)");
-    test_parse_expr("(a + (b + c))");
-    test_parse_expr("((a + b) + c)");
-    test_parse_expr("(a + b) * (c + d)");
-    test_parse_expr_fail("*a");
-    test_parse_expr_fail("a*");
-    test_parse_expr_fail("a # b");
-    test_parse_expr_fail("a +");
-    test_parse_expr_fail("a + b # c");
-    test_parse_expr_fail("(a");
-    test_parse_expr_fail("(a + b))");
-    test_parse_expr_fail("((a + b)");
+    test_parse("a + b");
+    test_parse("a + b + c");
+    test_parse("a + b - c");
+    test_parse("a + b * c + d");
+    test_parse("a or b or c");
+    test_parse("(a)");
+    test_parse("(a + b)");
+    test_parse("(a + (b + c))");
+    test_parse("((a + b) + c)");
+    test_parse("(a + b) * (c + d)");
+    test_parse_fail("*a");
+    test_parse_fail("a*");
+    test_parse_fail("a # b");
+    test_parse_fail("a +");
+    test_parse_fail("a + b # c");
+    test_parse_fail("(a");
+    test_parse_fail("(a + b))");
+    test_parse_fail("((a + b)");
 
     // Member expression
-    test_parse_expr("a.b");
-    test_parse_expr("a.b + c");
-    test_parse_expr("$runtime.v0.add");
-    test_parse_expr("$api.file.v2.fopen");
-    test_parse_expr_fail("a.'b'");
+    test_parse("a.b");
+    test_parse("a.b + c");
+    test_parse("$runtime.v0.add");
+    test_parse("$api.file.v2.fopen");
+    test_parse_fail("a.'b'");
 
     // Array indexing
-    test_parse_expr("a[0]");
-    test_parse_expr("a[b]");
-    test_parse_expr("a[b+2]");
-    test_parse_expr("a[2*b+1]");
-    test_parse_expr_fail("a[]");
-    test_parse_expr_fail("a[0 1]");
+    test_parse("a[0]");
+    test_parse("a[b]");
+    test_parse("a[b+2]");
+    test_parse("a[2*b+1]");
+    test_parse_fail("a[]");
+    test_parse_fail("a[0 1]");
 
     // If expression
-    test_parse_expr("if x then y");
-    test_parse_expr("if x then y + 1");
-    test_parse_expr("if x then y else z");
-    test_parse_expr("if x then a+c else d");
-    test_parse_expr("if x then a else b");
-    test_parse_expr("if a instanceof b then true");
-    test_parse_expr("if 'a' in b or 'c' in b then y");
-    test_parse_expr("if not x then y else z");
-    test_parse_expr("if x and not x then true else false");
-    test_parse_expr("if x <= 2 then y else z");
-    test_parse_expr("if x == 1 then y+z else z+d");
-    test_parse_expr("if true then y else z");
-    test_parse_expr("if true or false then y else z");
-    test_parse_expr_fail("if x then a b");
+    test_parse("if x then y");
+    test_parse("if x then y + 1");
+    test_parse("if x then y else z");
+    test_parse("if x then a+c else d");
+    test_parse("if x then a else b");
+    test_parse("if a instanceof b then true");
+    test_parse("if 'a' in b or 'c' in b then y");
+    test_parse("if not x then y else z");
+    test_parse("if x and not x then true else false");
+    test_parse("if x <= 2 then y else z");
+    test_parse("if x == 1 then y+z else z+d");
+    test_parse("if true then y else z");
+    test_parse("if true or false then y else z");
+    //test_parse_fail("if x then");
+    test_parse_fail("if x then a if");
 
     // Assignment
-    test_parse_expr("x = 1");
-    test_parse_expr("x = -1");
-    test_parse_expr("a.b = x + y");
-    test_parse_expr("x = y = 1");
-    test_parse_expr("var x");
-    test_parse_expr("var x = 3");
-    test_parse_expr("let x=3");
-    test_parse_expr("let x= 3+y");
-    test_parse_expr_fail("var");
-    test_parse_expr_fail("let");
-    test_parse_expr_fail("let x");
-    test_parse_expr_fail("let x=");
-    test_parse_expr_fail("var +");
-    test_parse_expr_fail("var 3");
+    test_parse("x = 1");
+    test_parse("x = -1");
+    test_parse("a.b = x + y");
+    test_parse("x = y = 1");
+    test_parse("var x");
+    test_parse("var x = 3");
+    test_parse("let x=3");
+    test_parse("let x= 3+y");
+    test_parse_fail("var");
+    test_parse_fail("let");
+    test_parse_fail("let x");
+    test_parse_fail("let x=");
+    test_parse_fail("var +");
+    test_parse_fail("var 3");
 
     // Call expressions
-    test_parse_expr("a()");
-    test_parse_expr("a(b)");
-    test_parse_expr("a(b,c)");
-    test_parse_expr("a(b,c+1)");
-    test_parse_expr("a(b,c+1,)");
-    test_parse_expr("x + a(b,c+1)");
-    test_parse_expr("x + a(b,c+1) + y");
-    test_parse_expr_fail("a(b c+1)");
+    test_parse("a()");
+    test_parse("a(b)");
+    test_parse("a(b,c)");
+    test_parse("a(b,c+1)");
+    test_parse("a(b,c+1,)");
+    test_parse("x + a(b,c+1)");
+    test_parse("x + a(b,c+1) + y");
+    test_parse_fail("a(b c+1)");
 
     // Function expression
-    test_parse_expr("fun () 0");
-    test_parse_expr("fun (x) x");
-    test_parse_expr("fun (x,y) x");
-    test_parse_expr("fun (x,y,) x");
-    test_parse_expr("fun (x,y) x+y");
-    test_parse_expr("fun (x,y) if x then y else 0");
-    test_parse_expr("obj.method = fun (this, x) this.x = x");
-    test_parse_expr_fail("fun (x,y)");
-    test_parse_expr_fail("fun ('x') x");
-    test_parse_expr_fail("fun (x+y) y");
+    test_parse("fun () 0");
+    test_parse("fun (x) x");
+    test_parse("fun (x,y) x");
+    test_parse("fun (x,y,) x");
+    test_parse("fun (x,y) x+y");
+    test_parse("fun (x,y) if x then y else 0");
+    test_parse("obj.method = fun (this, x) this.x = x");
+    test_parse_fail("fun (x,y)");
+    test_parse_fail("fun ('x') x");
+    test_parse_fail("fun (x+y) y");
 
     // Fibonacci
-    test_parse_expr("let fib = fun (n) if n < 2 then n else fib(n-1) + fib(n-2)");
+    test_parse("let fib = fun (n) if n < 2 then n else fib(n-1) + fib(n-2)");
 
     // Sequence/block expression
-    test_parse_expr("{ a b }");
-    test_parse_expr("fun (x) { println(x) println(y) }");
-    test_parse_expr("fun (x) { var y = x + 1 print(y) }");
-    test_parse_expr("if (x) then { println(x) } else { println(y) z }");
-    test_parse_expr_fail("{ a, b }");
+    test_parse("{ a b }");
+    test_parse("fun (x) { println(x) println(y) }");
+    test_parse("fun (x) { var y = x + 1 print(y) }");
+    test_parse("if (x) then { println(x) } else { println(y) z }");
+    test_parse_fail("{ a, b }");
 
     // TODO: try parsing parser.zeta
 

@@ -5,7 +5,7 @@
 #include "parser.h"
 #include "vm.h"
 
-#define MAX_LOCALS 64
+#define MAX_LOCALS 128
 
 /**
 Interpreter stack frame

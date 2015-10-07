@@ -243,6 +243,7 @@ void input_eat_ws(input_t* input);
 
 void parser_init();
 heapptr_t parse_expr(input_t* input);
+heapptr_t parse_unit(input_t* input);
 
 void test_parser();
 
