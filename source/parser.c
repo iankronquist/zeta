@@ -711,6 +711,65 @@ const opinfo_t* input_match_op(input_t* input, int minPrec, bool preUnary)
 }
 
 /**
+Parse a variable declaration
+Note: assumes that the "var" keyword has already been matched
+*/
+heapptr_t parse_var_decl(input_t* input)
+{
+    input_eat_ws(input);
+
+    heapptr_t ident = parse_ident(input);
+
+    if (ident == NULL)
+    {
+        input->error_str = "expected identifier in variable expression";
+        return NULL;
+    }
+
+    return ast_decl_alloc(ident, false);
+}
+
+/**
+Parse a constant declaration
+Note: assumes that the "let" keyword has already been matched
+*/
+heapptr_t parse_cst_decl(input_t* input)
+{
+    input_eat_ws(input);
+
+    heapptr_t ident = parse_ident(input);
+
+    if (ident == NULL)
+    {
+        input->error_str = "expected identifier in variable expression";
+        return NULL;
+    }
+
+    input_eat_ws(input);
+
+    // A value must be assigned to the constant declared
+    if (!input_match_str(input, "="))
+    {
+        input->error_str = "expected value assignment in let declaration";
+        return NULL;
+    }
+
+    heapptr_t val = parse_expr(input);
+
+    if (!val)
+    {
+        return NULL;
+    }
+
+    // Create and return an assignment expression
+    return ast_binop_alloc(
+        &OP_ASSG,
+        ast_decl_alloc(ident, true),
+        val
+    );
+}
+
+/**
 Parse an atomic expression
 */
 heapptr_t parse_atom(input_t* input)
@@ -785,27 +844,13 @@ heapptr_t parse_atom(input_t* input)
     // Identifier
     if (isalnum(input_peek_ch(input)))
     {
-        // TODO: move this to parse_var_decl and parse_cst_decl
         // Variable declaration
         if (input_match_str(input, "var"))
-        {
-            input_eat_ws(input);
+            return parse_var_decl(input);
 
-            heapptr_t ident = parse_ident(input);
-
-            if (ident == NULL)
-            {
-                input->error_str = "expected identifier in member expression";
-                return NULL;
-            }
-
-            return ast_decl_alloc(ident, false);
-        }
-
-        // TODO
         // Constant declaration
         if (input_match_str(input, "let"))
-            return NULL;
+            return parse_cst_decl(input);
 
         // If expression
         if (input_match_str(input, "if"))
@@ -1123,13 +1168,18 @@ void test_parser()
     test_parse_expr_fail("if x then a b");
 
     // Assignment
-    test_parse_expr("var x");
-    test_parse_expr("var x = 3");
     test_parse_expr("x = 1");
     test_parse_expr("x = -1");
     test_parse_expr("a.b = x + y");
     test_parse_expr("x = y = 1");
+    test_parse_expr("var x");
+    test_parse_expr("var x = 3");
+    test_parse_expr("let x=3");
+    test_parse_expr("let x= 3+y");
     test_parse_expr_fail("var");
+    test_parse_expr_fail("let");
+    test_parse_expr_fail("let x");
+    test_parse_expr_fail("let x=");
     test_parse_expr_fail("var +");
     test_parse_expr_fail("var 3");
 
@@ -1156,7 +1206,7 @@ void test_parser()
     test_parse_expr_fail("fun (x+y) y");
 
     // Fibonacci
-    test_parse_expr("var fib = fun (n) if n < 2 then n else fib(n-1) + fib(n-2)");
+    test_parse_expr("let fib = fun (n) if n < 2 then n else fib(n-1) + fib(n-2)");
 
     // Sequence/block expression
     test_parse_expr("{ a b }");
