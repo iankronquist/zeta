@@ -464,6 +464,12 @@ heapptr_t parse_if_expr(input_t* input)
 
     heapptr_t then_expr = parse_expr(input);
 
+    // There must be a then clause
+    if (then_expr == NULL)
+    {
+        return NULL;
+    }
+
     heapptr_t else_expr;
 
     // If these is an else clause
@@ -1200,7 +1206,8 @@ void test_parser()
     test_parse("if x == 1 then y+z else z+d");
     test_parse("if true then y else z");
     test_parse("if true or false then y else z");
-    //test_parse_fail("if x then");
+    test_parse_fail("if x");
+    test_parse_fail("if x then");
     test_parse_fail("if x then a if");
 
     // Assignment
@@ -1227,6 +1234,7 @@ void test_parser()
     test_parse("a(b,c+1,)");
     test_parse("x + a(b,c+1)");
     test_parse("x + a(b,c+1) + y");
+    test_parse("a() b()");
     test_parse_fail("a(b c+1)");
 
     // Function expression
@@ -1237,6 +1245,7 @@ void test_parser()
     test_parse("fun (x,y) x+y");
     test_parse("fun (x,y) if x then y else 0");
     test_parse("obj.method = fun (this, x) this.x = x");
+    test_parse("let f = fun () 0\nf()");
     test_parse_fail("fun (x,y)");
     test_parse_fail("fun ('x') x");
     test_parse_fail("fun (x+y) y");
