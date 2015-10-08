@@ -213,32 +213,21 @@ value_t eval_str(char* cstr)
     // Create a parser input stream object
     input_t input = input_from_string(str);
 
-    // Until the end of the input is reached
-    for (;;)
-    {
-        // Parse one expression
-        heapptr_t expr = parse_expr(&input);
+    // Parse the input as a source code unit
+    ast_fun_t* unit_fun = parse_unit(&input);
 
-        if (expr == NULL)
-        {
-            char buf[64];
-            printf(
-                "Failed to parse expression %s - %s\n",
-                srcpos_to_str(input.pos, buf),
-                input.error_str
-            );
+    // TODO:
+    // Resolve variables in the unit
+    //var_res_pass(unit_fun);
 
-            return VAL_FALSE;
-        }
 
-        // Evaluate the expression
-        value_t value = eval_expr(expr);
+    // TODO:
+    // Call the unit function and return the result
 
-        // If this is the end of the input, stop
-        input_eat_ws(&input);
-        if (input_eof(&input))
-            return value;
-    }
+
+
+
+    return VAL_FALSE;
 }
 
 void test_eval(char* cstr, value_t expected)
@@ -273,6 +262,7 @@ void test_eval_false(char* cstr)
 
 void test_interp()
 {
+    /*
     test_eval_int("0", 0);
     test_eval_int("1", 1);
     test_eval_int("7", 7);
@@ -316,7 +306,7 @@ void test_interp()
     test_eval_int("if false then 1 else 0", 0);
     test_eval_int("if 0 < 10 then 7 else 3", 7);
     test_eval_int("if not true then 1 else 0", 0);
-
+    */
 
 
 

@@ -1028,7 +1028,7 @@ heapptr_t parse_expr(input_t* input)
 }
 
 /// Parse a source unit
-heapptr_t parse_unit(input_t* input)
+ast_fun_t* parse_unit(input_t* input)
 {
     // Allocate an array with an initial capacity
     array_t* arr = array_alloc(32);
@@ -1059,7 +1059,7 @@ heapptr_t parse_unit(input_t* input)
     // Create an empty array for the parameter list
     array_t* param_list = array_alloc(0);
 
-    return (heapptr_t)ast_fun_alloc(param_list, seq_expr);
+    return (ast_fun_t*)ast_fun_alloc(param_list, seq_expr);
 }
 
 /// Test that the parsing of a source unit succeeds
@@ -1071,12 +1071,12 @@ void test_parse(char* cstr)
     strcpy(str->data, cstr);
     input_t input = input_from_string(str);
 
-    heapptr_t expr = parse_unit(&input);
+    ast_fun_t* unit = parse_unit(&input);
 
     // Consume any remaining whitespace
     input_eat_ws(&input);
 
-    if (!expr)
+    if (!unit)
     {
         printf("failed to parse:\n\"%s\"\n", cstr);
         exit(-1);
@@ -1102,12 +1102,12 @@ void test_parse_fail(char* cstr)
     strcpy(str->data, cstr);
     input_t input = input_from_string(str);
 
-    heapptr_t expr = parse_unit(&input);
+    ast_fun_t* unit = parse_unit(&input);
 
     // Consume any remaining whitespace
     input_eat_ws(&input);
 
-    if (expr && input_eof(&input))
+    if (unit && input_eof(&input))
     {
         printf("parsing did not fail for:\n\"%s\"\n", cstr);
         exit(-1);
