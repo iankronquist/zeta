@@ -75,11 +75,17 @@ typedef struct
 {
     shapeidx_t shape;
 
-    /// Identifier name string
-    string_t* name_str;
-
     /// Local index
-    uint16_t idx;
+    uint32_t idx;
+
+    /// Distance from declaration scope
+    uint16_t depth;
+
+    /// Global variable flag
+    bool global;
+
+    /// Identifier name string
+    string_t* name;
 
 } ast_ref_t;
 
@@ -90,20 +96,17 @@ typedef struct
 {
     shapeidx_t shape;
 
-    /// Identifier name string
-    string_t* name_str;
-
     /// Local index
-    uint16_t idx;
-
-    /// Distance from declaration scope
-    uint16_t depth;
+    uint32_t idx;
 
     /// Constant flag
     bool cst;
 
     /// Captured by closure flag
     bool capt;
+
+    /// Identifier name string
+    string_t* name;
 
 } ast_decl_t;
 

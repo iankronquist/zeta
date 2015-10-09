@@ -23,12 +23,96 @@ typedef struct scope
 
 void find_decls(heapptr_t expr, scope_t* scope)
 {
+    // Get the shape of the AST node
+    shapeidx_t shape = get_shape(expr);
 
+    if (shape == SHAPE_AST_DECL)
+    {
+        ast_decl_t* decl = (ast_decl_t*)expr;
+
+        // If this variable is already declared, do nothing
+        for (size_t i = 0; i < scope->num_locals; ++i)
+            if (scope->locals[i]->name == decl->name)
+                return;
+
+        if (scope->num_locals >= MAX_LOCALS)
+        {
+            printf("exceeded MAX_LOCALS\n");
+            exit(-1);
+        }
+
+        decl->idx = scope->num_locals;
+        scope->locals[decl->idx] = decl;
+
+        return;
+    }
+
+    // Sequence/block expression
+    if (shape == SHAPE_AST_SEQ)
+    {
+        ast_seq_t* seqexpr = (ast_seq_t*)expr;
+        array_t* expr_list = seqexpr->expr_list;
+
+        for (size_t i = 0; i < expr_list->len; ++i)
+            find_decls(array_get(expr_list, i).word.heapptr, scope);
+
+        return;
+    }
+
+    // TODO
 }
 
 void var_res(heapptr_t expr, scope_t* scope)
 {
+    // Get the shape of the AST node
+    shapeidx_t shape = get_shape(expr);
 
+    if (shape == SHAPE_AST_REF)
+    {
+        ast_ref_t* ref = (ast_ref_t*)expr;
+
+        // For each scope
+        scope_t* cur;
+        uint16_t depth = 0;
+        for (cur = scope; cur != NULL; cur = scope->parent, depth++)
+        {
+            // For each local
+            for (size_t i = 0; i < cur->num_locals; ++i)
+            {
+                if (cur->locals[i]->name == ref->name)
+                {
+                    ref->idx = cur->locals[i]->idx;
+                    ref->depth = depth;
+
+                    // If this local is from another scope,
+                    // mark the variable as captured
+                    if (depth > 0)
+                    cur->locals[i]->capt = true;
+
+                    return;
+                }
+            }
+        }
+
+        // If unresolved, mark as global
+        ref->global = true;
+
+        return;
+    }
+
+    // Sequence/block expression
+    if (shape == SHAPE_AST_SEQ)
+    {
+        ast_seq_t* seqexpr = (ast_seq_t*)expr;
+        array_t* expr_list = seqexpr->expr_list;
+
+        for (size_t i = 0; i < expr_list->len; ++i)
+            var_res(array_get(expr_list, i).word.heapptr, scope);
+
+        return;
+    }
+
+    // TODO
 }
 
 /**
@@ -216,7 +300,7 @@ value_t eval_expr(heapptr_t expr)
         if (get_shape(fun_expr) == SHAPE_AST_REF && arg_exprs->len == 1)
         {
             ast_ref_t* fun_ident = (ast_ref_t*)fun_expr;
-            char* name_cstr = fun_ident->name_str->data;
+            char* name_cstr = fun_ident->name->data;
 
             heapptr_t arg_expr = array_get(arg_exprs, 0).word.heapptr;
             value_t arg_val = eval_expr(arg_expr);
