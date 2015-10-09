@@ -235,8 +235,8 @@ typedef struct
 {
     shapeidx_t shape;
 
-    // List of parameter names (strings)
-    array_t* param_names;
+    // List of parameter declarations (ast_decl_t)
+    array_t* param_decls;
 
     /// Function body expression
     heapptr_t body_expr;

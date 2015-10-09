@@ -304,7 +304,7 @@ heapptr_t ast_call_alloc(
 
 /// Allocate a function expression node
 heapptr_t ast_fun_alloc(
-    array_t* param_names,
+    array_t* param_decls,
     heapptr_t body_expr
 )
 {
@@ -312,7 +312,7 @@ heapptr_t ast_fun_alloc(
         sizeof(ast_fun_t),
         SHAPE_AST_FUN
     );
-    node->param_names = param_names;
+    node->param_decls = param_decls;
     node->body_expr = body_expr;
     return (heapptr_t)node;
 }
@@ -490,7 +490,7 @@ heapptr_t parse_if_expr(input_t* input)
 /**
 Parse a list of expressions
 */
-array_t* parse_expr_list(input_t* input, char endCh, bool identList, bool needSep)
+array_t* parse_expr_list(input_t* input, char endCh, bool needSep)
 {
     // Allocate an array with an initial capacity
     array_t* arr = array_alloc(4);
@@ -508,7 +508,7 @@ array_t* parse_expr_list(input_t* input, char endCh, bool identList, bool needSe
         }
 
         // Parse an expression
-        heapptr_t expr = identList? parse_ident(input):parse_expr(input);
+        heapptr_t expr = parse_expr(input);
 
         // The expression must not fail to parse
         if (expr == NULL)
@@ -552,13 +552,46 @@ heapptr_t parse_fun_expr(input_t* input)
         return NULL;
     }
 
-    array_t* param_list = parse_expr_list(input, ')', true, true);
+    // Allocate an array for the parameter declarations
+    array_t* param_decls = array_alloc(4);
 
-    if (param_list == NULL)
+    // Until the end of the list
+    for (;;)
     {
-        return NULL;
+        // Read whitespace
+        input_eat_ws(input);
+
+        // If this is the end of the list
+        if (input_match_ch(input, ')'))
+            break;
+
+        // Parse an identifier
+        heapptr_t ident = parse_ident(input);
+
+        if (ident == NULL)
+            return NULL;
+
+        heapptr_t decl = ast_decl_alloc(ident, false);
+
+        // Write the expression to the array
+        array_set_obj(param_decls, param_decls->len, decl);
+
+        // Read whitespace
+        input_eat_ws(input);
+
+        // If this is the end of the list
+        if (input_match_ch(input, ')'))
+            break;
+
+        // If this is not the first element, there must be a separator
+        if (!input_match_ch(input, ','))
+        {
+            input->error_str = "expected comma separator in parameter list";
+            return NULL;
+        }
     }
 
+    // Parse the function body
     heapptr_t body_expr = parse_expr(input);
 
     if (body_expr == NULL)
@@ -566,7 +599,7 @@ heapptr_t parse_fun_expr(input_t* input)
         return NULL;
     }
 
-    return (heapptr_t)ast_fun_alloc(param_list, body_expr);
+    return (heapptr_t)ast_fun_alloc(param_decls, body_expr);
 }
 
 /// Member operator
@@ -805,7 +838,7 @@ heapptr_t parse_atom(input_t* input)
     // Array literal
     if (input_match_ch(input, '['))
     {
-        return (heapptr_t)parse_expr_list(input, ']', false, true);
+        return (heapptr_t)parse_expr_list(input, ']', true);
     }
 
     // Parenthesized expression
@@ -829,7 +862,7 @@ heapptr_t parse_atom(input_t* input)
     // Sequence/block expression (i.e { a; b; c }
     if (input_match_ch(input, '{'))
     {
-        return ast_seq_alloc(parse_expr_list(input, '}', false, false));
+        return ast_seq_alloc(parse_expr_list(input, '}', false));
     }
 
     // Try matching a right-associative (prefix) unary operators
@@ -948,7 +981,7 @@ heapptr_t parse_expr_prec(input_t* input, int minPrec)
         if (op == &OP_CALL)
         {
             // Parse the argument list and create the call expression
-            array_t* arg_exprs = parse_expr_list(input, ')', false, true);
+            array_t* arg_exprs = parse_expr_list(input, ')', true);
 
             lhs_expr = ast_call_alloc(lhs_expr, arg_exprs);
         }

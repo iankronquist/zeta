@@ -140,10 +140,11 @@ void var_res_pass(ast_fun_t* fun, scope_t* parent)
     // Create a new local scope
     scope_t scope;
     scope.parent = parent;
-    scope.num_locals = 0;
+    scope.num_locals = fun->param_decls->len;
 
-    // TODO: add parameters to scope
-    // ignore for now
+    // Add the function parameters to the local scope
+    for (size_t i = 0; i < fun->param_decls->len; ++i)
+        scope.locals[i] = (ast_decl_t*)array_get(fun->param_decls, i).word.heapptr;
 
     // Find declarations in the function body
     find_decls(fun->body_expr, &scope);
@@ -179,6 +180,20 @@ value_t eval_expr(heapptr_t expr, frame_t* frame)
     // Note: AST nodes must match the shapes defined in init_parser,
     // otherwise this interpreter can't handle it
     shapeidx_t shape = get_shape(expr);
+
+    // Variable reference
+    if (shape == SHAPE_AST_REF)
+    {
+        ast_ref_t* ref = (ast_ref_t*)expr;
+
+        // TODO
+        assert (false);
+
+
+
+
+
+    }
 
     if (shape == SHAPE_AST_CONST)
     {
