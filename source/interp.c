@@ -5,9 +5,6 @@
 #include "parser.h"
 #include "vm.h"
 
-/// Maximum number of locals supported by the core interpreter
-#define MAX_LOCALS 128
-
 /**
 Function scope representation
 */
@@ -59,7 +56,17 @@ void find_decls(heapptr_t expr, scope_t* scope)
         return;
     }
 
-    // TODO
+    // Binary operator (e.g. a + b)
+    if (shape == SHAPE_AST_BINOP)
+    {
+        ast_binop_t* binop = (ast_binop_t*)expr;
+
+        find_decls(binop->left_expr, scope);
+        find_decls(binop->right_expr, scope);
+        return;
+    }
+
+    // TODO: complete, add assertion
 }
 
 void var_res(heapptr_t expr, scope_t* scope)
@@ -112,7 +119,17 @@ void var_res(heapptr_t expr, scope_t* scope)
         return;
     }
 
-    // TODO
+    // Binary operator (e.g. a + b)
+    if (shape == SHAPE_AST_BINOP)
+    {
+        ast_binop_t* binop = (ast_binop_t*)expr;
+
+        var_res(binop->left_expr, scope);
+        var_res(binop->right_expr, scope);
+        return;
+    }
+
+    // TODO: complete, add assertion
 }
 
 /**
@@ -136,18 +153,6 @@ void var_res_pass(ast_fun_t* fun, scope_t* parent)
 }
 
 /**
-Interpreter stack frame
-*/
-typedef struct
-{
-    /// Number of locals
-    size_t num_locals;
-
-    value_t locals[MAX_LOCALS];
-
-} frame_t;
-
-/**
 Evaluate the boolean value of a value
 Note: the semantics of boolean evaluation are intentionally
 kept strict in the core language.
@@ -165,7 +170,10 @@ bool eval_truth(value_t value)
     }
 }
 
-value_t eval_expr(heapptr_t expr)
+/**
+Evaluate an expression in a given frame
+*/
+value_t eval_expr(heapptr_t expr, frame_t* frame)
 {
     // Get the shape of the AST node
     // Note: AST nodes must match the shapes defined in init_parser,
@@ -193,7 +201,7 @@ value_t eval_expr(heapptr_t expr)
         for (size_t i = 0; i < array_expr->len; ++i)
         {
             heapptr_t expr = array_get(array_expr, i).word.heapptr;
-            value_t value = eval_expr(expr);
+            value_t value = eval_expr(expr, frame);
             array_set(val_array, i, value);
         }
 
@@ -205,8 +213,8 @@ value_t eval_expr(heapptr_t expr)
     {
         ast_binop_t* binop = (ast_binop_t*)expr;
 
-        value_t v0 = eval_expr(binop->left_expr);
-        value_t v1 = eval_expr(binop->right_expr);
+        value_t v0 = eval_expr(binop->left_expr, frame);
+        value_t v1 = eval_expr(binop->right_expr, frame);
         int64_t i0 = v0.word.int64;
         int64_t i1 = v1.word.int64;
 
@@ -247,7 +255,7 @@ value_t eval_expr(heapptr_t expr)
     {
         ast_unop_t* unop = (ast_unop_t*)expr;
 
-        value_t v0 = eval_expr(unop->expr);
+        value_t v0 = eval_expr(unop->expr, frame);
 
         if (unop->op == &OP_NEG)
             return value_from_int64(-v0.word.int64);
@@ -270,7 +278,7 @@ value_t eval_expr(heapptr_t expr)
         for (size_t i = 0; i < expr_list->len; ++i)
         {
             heapptr_t expr = array_get(expr_list, i).word.heapptr;
-            value = eval_expr(expr);
+            value = eval_expr(expr, frame);
         }
 
         // Return the value of the last expression
@@ -282,12 +290,12 @@ value_t eval_expr(heapptr_t expr)
     {
         ast_if_t* ifexpr = (ast_if_t*)expr;
 
-        value_t t = eval_expr(ifexpr->test_expr);
+        value_t t = eval_expr(ifexpr->test_expr, frame);
 
         if (eval_truth(t))
-            return eval_expr(ifexpr->then_expr);
+            return eval_expr(ifexpr->then_expr, frame);
         else
-            return eval_expr(ifexpr->else_expr);
+            return eval_expr(ifexpr->else_expr, frame);
     }
 
     // Call expression
@@ -303,7 +311,7 @@ value_t eval_expr(heapptr_t expr)
             char* name_cstr = fun_ident->name->data;
 
             heapptr_t arg_expr = array_get(arg_exprs, 0).word.heapptr;
-            value_t arg_val = eval_expr(arg_expr);
+            value_t arg_val = eval_expr(arg_expr, frame);
 
             if (strncmp(name_cstr, "println", strlen("println")) == 0)
             {
@@ -329,9 +337,14 @@ value_t eval_expr(heapptr_t expr)
     exit(-1);
 }
 
-/// Evaluate the code in a given string
-value_t eval_str(char* cstr)
+/**
+Evaluate the source code in a given string
+This can also be used to evaluate files
+*/
+value_t eval_str(const char* cstr, const char* src_name)
 {
+    // TODO: feed src_name into input
+
     size_t len = strlen(cstr);
 
     // Allocate a hosted string object
@@ -348,22 +361,18 @@ value_t eval_str(char* cstr)
     // Resolve all variables in the unit
     var_res_pass(unit_fun, NULL);
 
+    // Create a local stack frame
+    frame_t frame;
 
-    // TODO:
-    // Call the unit function and return the result
-
-
-
-
-
-
+    // Evaluate the unit function body in the local frame
+    eval_expr(unit_fun->body_expr, &frame);
 
     return VAL_FALSE;
 }
 
 void test_eval(char* cstr, value_t expected)
 {
-    value_t value = eval_str(cstr);
+    value_t value = eval_str(cstr, "test");
 
     if (!value_equals(value, expected))
     {

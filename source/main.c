@@ -101,7 +101,7 @@ void run_repl()
         char* cstr = read_line();
 
         // Evaluate the code string
-        value_t value = eval_str(cstr);
+        value_t value = eval_str(cstr, "shell");
 
         free(cstr);
 
@@ -134,7 +134,7 @@ int main(int argc, char** argv)
             return -1;
 
         // Evaluate the code string
-        eval_str(cstr);
+        eval_str(cstr, argv[1]);
 
         free(cstr);
     }
