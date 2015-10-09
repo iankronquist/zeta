@@ -79,7 +79,7 @@ typedef struct
     string_t* name_str;
 
     /// Local index
-    uint32_t idx;
+    uint16_t idx;
 
 } ast_ref_t;
 
@@ -94,10 +94,16 @@ typedef struct
     string_t* name_str;
 
     /// Local index
-    uint32_t idx;
+    uint16_t idx;
+
+    /// Distance from declaration scope
+    uint16_t depth;
 
     /// Constant flag
     bool cst;
+
+    /// Captured by closure flag
+    bool capt;
 
 } ast_decl_t;
 

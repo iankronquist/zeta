@@ -5,14 +5,59 @@
 #include "parser.h"
 #include "vm.h"
 
+/// Maximum number of locals supported by the core interpreter
 #define MAX_LOCALS 128
+
+/**
+Function scope representation
+*/
+typedef struct scope
+{
+    struct scope* parent;
+
+    uint16_t num_locals;
+
+    ast_decl_t* locals[MAX_LOCALS];
+
+} scope_t;
+
+void find_decls(heapptr_t expr, scope_t* scope)
+{
+
+}
+
+void var_res(heapptr_t expr, scope_t* scope)
+{
+
+}
+
+/**
+Resolve variables in a given function
+*/
+void var_res_pass(ast_fun_t* fun, scope_t* parent)
+{
+    // Create a new local scope
+    scope_t scope;
+    scope.parent = parent;
+    scope.num_locals = 0;
+
+    // TODO: add parameters to scope
+    // ignore for now
+
+    // Find declarations in the function body
+    find_decls(fun->body_expr, &scope);
+
+    // Resolve variable references
+    var_res(fun->body_expr, &scope);
+}
 
 /**
 Interpreter stack frame
 */
 typedef struct
 {
-    size_t numLocals;
+    /// Number of locals
+    size_t num_locals;
 
     value_t locals[MAX_LOCALS];
 
@@ -216,13 +261,15 @@ value_t eval_str(char* cstr)
     // Parse the input as a source code unit
     ast_fun_t* unit_fun = parse_unit(&input);
 
-    // TODO:
-    // Resolve variables in the unit
-    //var_res_pass(unit_fun);
+    // Resolve all variables in the unit
+    var_res_pass(unit_fun, NULL);
 
 
     // TODO:
     // Call the unit function and return the result
+
+
+
 
 
 

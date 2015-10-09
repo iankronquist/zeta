@@ -206,7 +206,7 @@ heapptr_t ast_ref_alloc(heapptr_t name_str)
     );
     assert (get_shape(name_str) == SHAPE_STRING);
     node->name_str = (string_t*)name_str;
-    node->idx = 0xFFFFFFFF;
+    node->idx = 0xFFFF;
     return (heapptr_t)node;
 }
 
@@ -219,8 +219,9 @@ heapptr_t ast_decl_alloc(heapptr_t name_str, bool cst)
     );
     assert (get_shape(name_str) == SHAPE_STRING);
     node->name_str = (string_t*)name_str;
-    node->idx = 0xFFFFFFFF;
+    node->idx = 0xFFFF;
     node->cst = cst;
+    node->capt = false;
     return (heapptr_t)node;
 }
 
