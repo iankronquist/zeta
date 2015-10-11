@@ -239,6 +239,7 @@ shapeidx_t get_shape(heapptr_t obj);
 
 void vm_init();
 heapptr_t vm_alloc(uint32_t size, shapeidx_t shape);
+string_t* vm_get_tbl_str(string_t* str);
 string_t* vm_get_cstr(const char* cstr);
 
 string_t* string_alloc(uint32_t len);

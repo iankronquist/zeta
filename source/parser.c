@@ -352,7 +352,7 @@ heapptr_t parse_ident(input_t* input)
     // Copy the characters
     strncpy(str->data, input->str->data + startIdx, len);
 
-    return (heapptr_t)str;
+    return (heapptr_t)vm_get_tbl_str(str);
 }
 
 /**
@@ -644,7 +644,7 @@ const opinfo_t OP_AND = { "and", NULL, 2, 4, 'l', false };
 const opinfo_t OP_OR = { "or", NULL, 2, 3, 'l', false };
 
 // Assignment
-const opinfo_t OP_ASSG = { "=", NULL, 2, 1, 'r', false };
+const opinfo_t OP_ASSIGN = { "=", NULL, 2, 1, 'r', false };
 
 /**
 Try to match an operator in the input
@@ -715,7 +715,7 @@ const opinfo_t* input_match_op(input_t* input, int minPrec, bool preUnary)
 
         case '=':
         if (input_match_str(input, "=="))   op = &OP_EQ;
-        if (input_match_ch(input, '='))     op = &OP_ASSG;
+        if (input_match_ch(input, '='))     op = &OP_ASSIGN;
         break;
 
         case '!':
@@ -803,7 +803,7 @@ heapptr_t parse_cst_decl(input_t* input)
 
     // Create and return an assignment expression
     return ast_binop_alloc(
-        &OP_ASSG,
+        &OP_ASSIGN,
         ast_decl_alloc(ident, true),
         val
     );
@@ -1101,8 +1101,7 @@ void test_parse(char* cstr)
 {
     //printf("%s\n", cstr);
 
-    string_t* str = string_alloc(strlen(cstr));
-    strcpy(str->data, cstr);
+    string_t* str = vm_get_cstr(cstr);
     input_t input = input_from_string(str);
 
     ast_fun_t* unit = parse_unit(&input);
@@ -1132,8 +1131,7 @@ void test_parse_fail(char* cstr)
 {
     //printf("%s\n", cstr);
 
-    string_t* str = string_alloc(strlen(cstr));
-    strcpy(str->data, cstr);
+    string_t* str = vm_get_cstr(cstr);
     input_t input = input_from_string(str);
 
     ast_fun_t* unit = parse_unit(&input);

@@ -40,6 +40,13 @@ void find_decls(heapptr_t expr, scope_t* scope)
 
         decl->idx = scope->num_locals;
         scope->locals[decl->idx] = decl;
+        scope->num_locals++;
+
+        /*
+        printf("found decl\n");
+        string_print(decl->name);
+        printf("\n");
+        */
 
         return;
     }
@@ -80,26 +87,38 @@ void var_res(heapptr_t expr, scope_t* scope)
 
         // For each scope
         scope_t* cur;
-        uint16_t depth = 0;
-        for (cur = scope; cur != NULL; cur = scope->parent, depth++)
+        for (cur = scope; cur != NULL; cur = scope->parent)
         {
+            //printf("num_locals=%d\n", cur->num_locals);
+
             // For each local
             for (size_t i = 0; i < cur->num_locals; ++i)
             {
+                /*
+                printf("name is:\n");
+                string_print(cur->locals[i]->name);
+                printf("\n");
+                */
+
                 if (cur->locals[i]->name == ref->name)
                 {
                     ref->idx = cur->locals[i]->idx;
-                    ref->depth = depth;
 
                     // If this local is from another scope,
                     // mark the variable as captured
-                    if (depth > 0)
-                    cur->locals[i]->capt = true;
+                    if (cur != scope)
+                        cur->locals[i]->capt = true;
 
                     return;
                 }
             }
         }
+
+        /*
+        printf("found global\n");
+        string_print(ref->name);
+        printf("\n");
+        */
 
         // If unresolved, mark as global
         ref->global = true;
@@ -172,6 +191,36 @@ bool eval_truth(value_t value)
 }
 
 /**
+Evaluate an assignment expression
+*/
+value_t eval_assign(heapptr_t lhs_expr, heapptr_t rhs_expr, frame_t* frame)
+{
+    value_t val = eval_expr(rhs_expr, frame);
+
+    shapeidx_t shape = get_shape(lhs_expr);
+
+    // Assignment to variable declaration
+    if (shape == SHAPE_AST_DECL)
+    {
+        ast_decl_t* decl = (ast_decl_t*)lhs_expr;
+        frame->locals[decl->idx] = val;
+        return val;
+    }
+
+    // Assignment to a variable
+    if (shape == SHAPE_AST_REF)
+    {
+        // TODO
+        assert (false);
+
+        return val;
+    }
+
+    printf("\n");
+    exit(-1);
+}
+
+/**
 Evaluate an expression in a given frame
 */
 value_t eval_expr(heapptr_t expr, frame_t* frame)
@@ -186,13 +235,12 @@ value_t eval_expr(heapptr_t expr, frame_t* frame)
     {
         ast_ref_t* ref = (ast_ref_t*)expr;
 
-        // TODO
-        assert (false);
+        // TODO: handle captured (closure) variable references
 
+        // TODO: handle globals
+        assert (!ref->global);
 
-
-
-
+        return frame->locals[ref->idx];
     }
 
     if (shape == SHAPE_AST_CONST)
@@ -227,6 +275,10 @@ value_t eval_expr(heapptr_t expr, frame_t* frame)
     if (shape == SHAPE_AST_BINOP)
     {
         ast_binop_t* binop = (ast_binop_t*)expr;
+
+        // Assignment
+        if (binop->op == &OP_ASSIGN)
+            return eval_assign(binop->left_expr, binop->right_expr, frame);
 
         value_t v0 = eval_expr(binop->left_expr, frame);
         value_t v1 = eval_expr(binop->right_expr, frame);
@@ -380,9 +432,7 @@ value_t eval_str(const char* cstr, const char* src_name)
     frame_t frame;
 
     // Evaluate the unit function body in the local frame
-    eval_expr(unit_fun->body_expr, &frame);
-
-    return VAL_FALSE;
+    return eval_expr(unit_fun->body_expr, &frame);
 }
 
 void test_eval(char* cstr, value_t expected)
@@ -417,7 +467,6 @@ void test_eval_false(char* cstr)
 
 void test_interp()
 {
-    /*
     test_eval_int("0", 0);
     test_eval_int("1", 1);
     test_eval_int("7", 7);
@@ -461,7 +510,13 @@ void test_interp()
     test_eval_int("if false then 1 else 0", 0);
     test_eval_int("if 0 < 10 then 7 else 3", 7);
     test_eval_int("if not true then 1 else 0", 0);
-    */
+
+    // Variable declarations
+    test_eval_int("var x = 3\nx", 3);
+    test_eval_int("let x = 7\nx+1", 8);
+
+
+
 
 
 

@@ -78,9 +78,6 @@ typedef struct
     /// Local index
     uint32_t idx;
 
-    /// Distance from declaration scope
-    uint16_t depth;
-
     /// Global variable flag
     bool global;
 
@@ -158,7 +155,7 @@ const opinfo_t OP_BIT_XOR;
 const opinfo_t OP_BIT_OR;
 const opinfo_t OP_AND;
 const opinfo_t OP_OR;
-const opinfo_t OP_ASSG;
+const opinfo_t OP_ASSIGN;
 
 /**
 Unary operator AST node
