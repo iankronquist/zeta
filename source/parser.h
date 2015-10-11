@@ -75,11 +75,14 @@ typedef struct
 {
     shapeidx_t shape;
 
-    /// Local index
+    /// Local (stack) index
     uint32_t idx;
 
     /// Global variable flag
     bool global;
+
+    /// Captured variable flag
+    bool capt;
 
     /// Identifier name string
     string_t* name;
@@ -93,13 +96,13 @@ typedef struct
 {
     shapeidx_t shape;
 
-    /// Local index
+    /// Local (stack) index
     uint32_t idx;
 
     /// Constant flag
     bool cst;
 
-    /// Captured by closure flag
+    /// Captured variable flag
     bool capt;
 
     /// Identifier name string
@@ -228,12 +231,24 @@ typedef struct
 /**
 Function expression node
 */
-typedef struct
+typedef struct ast_fun
 {
     shapeidx_t shape;
 
-    // List of parameter declarations (ast_decl_t)
+    /// Parent (outer) function
+    struct ast_fun* parent;
+
+    /// List of parameter declarations
     array_t* param_decls;
+
+    /// List of local variable declarations
+    /// Note: this list also includes the parameters
+    /// Note: Variables captured by nested functions have the capt flag set
+    array_t* local_decls;
+
+    /// List of variables captured from outer functions
+    /// Note: these are stored in the closure object
+    array_t* capt_vars;
 
     /// Function body expression
     heapptr_t body_expr;

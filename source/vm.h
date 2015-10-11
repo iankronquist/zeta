@@ -249,6 +249,7 @@ array_t* array_alloc(uint32_t cap);
 void array_set(array_t* array, uint32_t idx, value_t val);
 void array_set_obj(array_t* array, uint32_t idx, heapptr_t val);
 value_t array_get(array_t* array, uint32_t idx);
+heapptr_t array_get_ptr(array_t* array, uint32_t idx);
 
 shape_t* shape_alloc(
     shape_t* parent,

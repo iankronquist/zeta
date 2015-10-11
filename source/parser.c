@@ -312,7 +312,10 @@ heapptr_t ast_fun_alloc(
         sizeof(ast_fun_t),
         SHAPE_AST_FUN
     );
+    node->parent = NULL;
     node->param_decls = param_decls;
+    node->local_decls = array_alloc(4);
+    node->capt_vars = array_alloc(4);
     node->body_expr = body_expr;
     return (heapptr_t)node;
 }

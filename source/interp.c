@@ -1,24 +1,12 @@
 #include <stdio.h>
 #include <string.h>
 #include <assert.h>
+#include <alloca.h>
 #include "interp.h"
 #include "parser.h"
 #include "vm.h"
 
-/**
-Function scope representation
-*/
-typedef struct scope
-{
-    struct scope* parent;
-
-    uint16_t num_locals;
-
-    ast_decl_t* locals[MAX_LOCALS];
-
-} scope_t;
-
-void find_decls(heapptr_t expr, scope_t* scope)
+void find_decls(heapptr_t expr, ast_fun_t* fun)
 {
     // Get the shape of the AST node
     shapeidx_t shape = get_shape(expr);
@@ -28,19 +16,15 @@ void find_decls(heapptr_t expr, scope_t* scope)
         ast_decl_t* decl = (ast_decl_t*)expr;
 
         // If this variable is already declared, do nothing
-        for (size_t i = 0; i < scope->num_locals; ++i)
-            if (scope->locals[i]->name == decl->name)
-                return;
-
-        if (scope->num_locals >= MAX_LOCALS)
+        for (size_t i = 0; i < fun->local_decls->len; ++i)
         {
-            printf("exceeded MAX_LOCALS\n");
-            exit(-1);
+            ast_decl_t* local = (ast_decl_t*)array_get_ptr(fun->local_decls, i);
+            if (local->name == decl->name)
+                return;
         }
 
-        decl->idx = scope->num_locals;
-        scope->locals[decl->idx] = decl;
-        scope->num_locals++;
+        decl->idx = fun->local_decls->len;
+        array_set_obj(fun->local_decls, decl->idx, (heapptr_t)decl);
 
         /*
         printf("found decl\n");
@@ -58,7 +42,7 @@ void find_decls(heapptr_t expr, scope_t* scope)
         array_t* expr_list = seqexpr->expr_list;
 
         for (size_t i = 0; i < expr_list->len; ++i)
-            find_decls(array_get(expr_list, i).word.heapptr, scope);
+            find_decls(array_get(expr_list, i).word.heapptr, fun);
 
         return;
     }
@@ -68,15 +52,15 @@ void find_decls(heapptr_t expr, scope_t* scope)
     {
         ast_binop_t* binop = (ast_binop_t*)expr;
 
-        find_decls(binop->left_expr, scope);
-        find_decls(binop->right_expr, scope);
+        find_decls(binop->left_expr, fun);
+        find_decls(binop->right_expr, fun);
         return;
     }
 
     // TODO: complete, add assertion
 }
 
-void var_res(heapptr_t expr, scope_t* scope)
+void var_res(heapptr_t expr, ast_fun_t* fun)
 {
     // Get the shape of the AST node
     shapeidx_t shape = get_shape(expr);
@@ -86,28 +70,33 @@ void var_res(heapptr_t expr, scope_t* scope)
         ast_ref_t* ref = (ast_ref_t*)expr;
 
         // For each scope
-        scope_t* cur;
-        for (cur = scope; cur != NULL; cur = scope->parent)
+        ast_fun_t* cur;
+        for (cur = fun; cur != NULL; cur = cur->parent)
         {
-            //printf("num_locals=%d\n", cur->num_locals);
-
             // For each local
-            for (size_t i = 0; i < cur->num_locals; ++i)
+            for (size_t i = 0; i < cur->local_decls->len; ++i)
             {
-                /*
-                printf("name is:\n");
-                string_print(cur->locals[i]->name);
-                printf("\n");
-                */
+                ast_decl_t* local = (ast_decl_t*)array_get_ptr(cur->local_decls, i);
 
-                if (cur->locals[i]->name == ref->name)
+                if (local->name == ref->name)
                 {
-                    ref->idx = cur->locals[i]->idx;
+                    // If the variable is from this scope
+                    if (cur == fun)
+                    {
+                        ref->idx = local->idx;
+                    }
 
-                    // If this local is from another scope,
-                    // mark the variable as captured
-                    if (cur != scope)
-                        cur->locals[i]->capt = true;
+                    // The variable is from an outer scope
+                    else
+                    {
+                        // Mark the declaration as captured
+                        local->capt = true;
+
+
+
+
+
+                    }
 
                     return;
                 }
@@ -133,7 +122,7 @@ void var_res(heapptr_t expr, scope_t* scope)
         array_t* expr_list = seqexpr->expr_list;
 
         for (size_t i = 0; i < expr_list->len; ++i)
-            var_res(array_get(expr_list, i).word.heapptr, scope);
+            var_res(array_get_ptr(expr_list, i), fun);
 
         return;
     }
@@ -143,8 +132,8 @@ void var_res(heapptr_t expr, scope_t* scope)
     {
         ast_binop_t* binop = (ast_binop_t*)expr;
 
-        var_res(binop->left_expr, scope);
-        var_res(binop->right_expr, scope);
+        var_res(binop->left_expr, fun);
+        var_res(binop->right_expr, fun);
         return;
     }
 
@@ -154,22 +143,21 @@ void var_res(heapptr_t expr, scope_t* scope)
 /**
 Resolve variables in a given function
 */
-void var_res_pass(ast_fun_t* fun, scope_t* parent)
+void var_res_pass(ast_fun_t* fun, ast_fun_t* parent)
 {
-    // Create a new local scope
-    scope_t scope;
-    scope.parent = parent;
-    scope.num_locals = fun->param_decls->len;
+    fun->parent = parent;
 
     // Add the function parameters to the local scope
     for (size_t i = 0; i < fun->param_decls->len; ++i)
-        scope.locals[i] = (ast_decl_t*)array_get(fun->param_decls, i).word.heapptr;
+    {
+        array_set(fun->local_decls, i, array_get(fun->param_decls, i));
+    }
 
     // Find declarations in the function body
-    find_decls(fun->body_expr, &scope);
+    find_decls(fun->body_expr, fun);
 
     // Resolve variable references
-    var_res(fun->body_expr, &scope);
+    var_res(fun->body_expr, fun);
 }
 
 /**
@@ -193,9 +181,13 @@ bool eval_truth(value_t value)
 /**
 Evaluate an assignment expression
 */
-value_t eval_assign(heapptr_t lhs_expr, heapptr_t rhs_expr, frame_t* frame)
+value_t eval_assign(
+    heapptr_t lhs_expr,
+    heapptr_t rhs_expr,
+    value_t* locals
+)
 {
-    value_t val = eval_expr(rhs_expr, frame);
+    value_t val = eval_expr(rhs_expr, locals);
 
     shapeidx_t shape = get_shape(lhs_expr);
 
@@ -203,7 +195,11 @@ value_t eval_assign(heapptr_t lhs_expr, heapptr_t rhs_expr, frame_t* frame)
     if (shape == SHAPE_AST_DECL)
     {
         ast_decl_t* decl = (ast_decl_t*)lhs_expr;
-        frame->locals[decl->idx] = val;
+
+        assert (!decl->capt);
+
+        locals[decl->idx] = val;
+
         return val;
     }
 
@@ -223,7 +219,10 @@ value_t eval_assign(heapptr_t lhs_expr, heapptr_t rhs_expr, frame_t* frame)
 /**
 Evaluate an expression in a given frame
 */
-value_t eval_expr(heapptr_t expr, frame_t* frame)
+value_t eval_expr(
+    heapptr_t expr, 
+    value_t* locals
+)
 {
     // Get the shape of the AST node
     // Note: AST nodes must match the shapes defined in init_parser,
@@ -235,12 +234,25 @@ value_t eval_expr(heapptr_t expr, frame_t* frame)
     {
         ast_ref_t* ref = (ast_ref_t*)expr;
 
-        // TODO: handle captured (closure) variable references
+        // If this is a captured (closure) variable
+        if (ref->capt)
+        {
+            // TODO
+            assert (false);
+
+
+
+
+
+
+
+
+        }
 
         // TODO: handle globals
         assert (!ref->global);
 
-        return frame->locals[ref->idx];
+        return locals[ref->idx];
     }
 
     if (shape == SHAPE_AST_CONST)
@@ -264,7 +276,7 @@ value_t eval_expr(heapptr_t expr, frame_t* frame)
         for (size_t i = 0; i < array_expr->len; ++i)
         {
             heapptr_t expr = array_get(array_expr, i).word.heapptr;
-            value_t value = eval_expr(expr, frame);
+            value_t value = eval_expr(expr, locals);
             array_set(val_array, i, value);
         }
 
@@ -278,10 +290,10 @@ value_t eval_expr(heapptr_t expr, frame_t* frame)
 
         // Assignment
         if (binop->op == &OP_ASSIGN)
-            return eval_assign(binop->left_expr, binop->right_expr, frame);
+            return eval_assign(binop->left_expr, binop->right_expr, locals);
 
-        value_t v0 = eval_expr(binop->left_expr, frame);
-        value_t v1 = eval_expr(binop->right_expr, frame);
+        value_t v0 = eval_expr(binop->left_expr, locals);
+        value_t v1 = eval_expr(binop->right_expr, locals);
         int64_t i0 = v0.word.int64;
         int64_t i1 = v1.word.int64;
 
@@ -322,7 +334,7 @@ value_t eval_expr(heapptr_t expr, frame_t* frame)
     {
         ast_unop_t* unop = (ast_unop_t*)expr;
 
-        value_t v0 = eval_expr(unop->expr, frame);
+        value_t v0 = eval_expr(unop->expr, locals);
 
         if (unop->op == &OP_NEG)
             return value_from_int64(-v0.word.int64);
@@ -345,7 +357,7 @@ value_t eval_expr(heapptr_t expr, frame_t* frame)
         for (size_t i = 0; i < expr_list->len; ++i)
         {
             heapptr_t expr = array_get(expr_list, i).word.heapptr;
-            value = eval_expr(expr, frame);
+            value = eval_expr(expr, locals);
         }
 
         // Return the value of the last expression
@@ -357,12 +369,12 @@ value_t eval_expr(heapptr_t expr, frame_t* frame)
     {
         ast_if_t* ifexpr = (ast_if_t*)expr;
 
-        value_t t = eval_expr(ifexpr->test_expr, frame);
+        value_t t = eval_expr(ifexpr->test_expr, locals);
 
         if (eval_truth(t))
-            return eval_expr(ifexpr->then_expr, frame);
+            return eval_expr(ifexpr->then_expr, locals);
         else
-            return eval_expr(ifexpr->else_expr, frame);
+            return eval_expr(ifexpr->else_expr, locals);
     }
 
     // Call expression
@@ -378,7 +390,7 @@ value_t eval_expr(heapptr_t expr, frame_t* frame)
             char* name_cstr = fun_ident->name->data;
 
             heapptr_t arg_expr = array_get(arg_exprs, 0).word.heapptr;
-            value_t arg_val = eval_expr(arg_expr, frame);
+            value_t arg_val = eval_expr(arg_expr, locals);
 
             if (strncmp(name_cstr, "println", strlen("println")) == 0)
             {
@@ -428,11 +440,11 @@ value_t eval_str(const char* cstr, const char* src_name)
     // Resolve all variables in the unit
     var_res_pass(unit_fun, NULL);
 
-    // Create a local stack frame
-    frame_t frame;
+    // Allocate space for the local variables
+    value_t* locals = alloca(sizeof(value_t) * unit_fun->local_decls->len);
 
     // Evaluate the unit function body in the local frame
-    return eval_expr(unit_fun->body_expr, &frame);
+    return eval_expr(unit_fun->body_expr, locals);
 }
 
 void test_eval(char* cstr, value_t expected)

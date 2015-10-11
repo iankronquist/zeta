@@ -13,22 +13,7 @@ semantics supported are limited.
 
 #include "vm.h"
 
-/// Maximum number of locals supported by the core interpreter
-#define MAX_LOCALS 128
-
-/**
-Interpreter stack frame
-*/
-typedef struct
-{
-    /// Number of locals
-    size_t num_locals;
-
-    value_t locals[MAX_LOCALS];
-
-} frame_t;
-
-value_t eval_expr(heapptr_t expr, frame_t* frame);
+value_t eval_expr(heapptr_t expr, value_t* locals);
 
 value_t eval_str(const char* cstr, const char* src_name);
 

@@ -492,6 +492,11 @@ value_t array_get(array_t* array, uint32_t idx)
     return array->elems[idx];
 }
 
+heapptr_t array_get_ptr(array_t* array, uint32_t idx)
+{
+    return array_get(array, idx).word.heapptr;
+}
+
 //============================================================================
 // Shapes and objects
 //============================================================================
