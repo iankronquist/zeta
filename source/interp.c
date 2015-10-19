@@ -92,10 +92,16 @@ void var_res(heapptr_t expr, ast_fun_t* fun)
                         // Mark the declaration as captured
                         local->capt = true;
 
-
-
-
-
+                        // Thread the local as a closure variable
+                        ast_fun_t* clos;
+                        for (clos = fun; clos != cur; clos = clos->parent)
+                        {
+                            array_set_obj(
+                                clos->capt_vars, 
+                                clos->capt_vars->len,
+                                (heapptr_t)local
+                            );
+                        }
                     }
 
                     return;
@@ -196,7 +202,19 @@ value_t eval_assign(
     {
         ast_decl_t* decl = (ast_decl_t*)lhs_expr;
 
-        assert (!decl->capt);
+        // If this variable is captured by a closure
+        if (decl->capt)
+        {
+            // Closure variables are stored in mutable cells
+            // Pointers to the cells are stored on the stack
+
+
+
+            // TODO
+            assert (false);
+
+            return val;
+        }
 
         locals[decl->idx] = val;
 
@@ -206,8 +224,31 @@ value_t eval_assign(
     // Assignment to a variable
     if (shape == SHAPE_AST_REF)
     {
-        // TODO
-        assert (false);
+        ast_ref_t* ref = (ast_ref_t*)lhs_expr;
+
+        // If this a closure variable
+        if (ref->capt)
+        {
+            // Closure variables are stored in mutable cells
+            // Pointers to the cells are found on the closure object
+
+
+
+
+            // TODO
+            assert (false);
+
+            return val;
+        }
+
+        // If this is a global variable
+        if (ref->global)
+        {
+            // TODO
+            assert (false);
+
+            return val;
+        }
 
         return val;
     }
