@@ -1,7 +1,7 @@
 The Zeta Programming Language
 =============================
 
-This is an implementation of a Virtual Machine (VM) for the zeta programming
+This is an implementation of a Virtual Machine (VM) for the Zeta programming
 language I'm working on in my spare time. Zeta draws inspiration from LISP,
 Smalltalk, ML, Python, JavaScript and C. The language is currently at the early
 prototype stage, meaning the syntax and semantics are likely to change a lot
@@ -167,6 +167,20 @@ export(foo, 'foo')
 
 Everything is still in flux. Your comments on the syntax and above
 example are welcome.
+
+## Language Extensions
+
+Zeta's "killer feature" will be the ability to extend the language in a way that feels native. The core language will be kept lean and minimal, but a library of "officially sanctioned" language extensions will be curated. For instance, the core Zeta language will only support functions with fixed arity and positional arguments. I would like, however, to implement variable arity functions, default values, optional and keyword arguments (as in Python) as a language extension.
+
+Some useful language extensions I can think of
+
+- Variable arity functions, optional arguments, keyword arguments
+- Multiple return values
+- Dictionary types
+- JS-like regular expressions
+- JS-like template strings
+- PHP-like templating mode
+- MATLAB-like vector and matrix arithmetic
 
 ## Zeta VM
 
