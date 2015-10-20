@@ -25,7 +25,7 @@ Requirements:
 
 To built the Zeta VM, go to the source directory and run `make`
 
-Tests can then by running the `make test` command
+Tests can then be executed by running the `make test` command
 
 A read-eval-print loop (shell) can be started by running the `./zeta` binary
 
