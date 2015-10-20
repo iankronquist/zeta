@@ -51,6 +51,7 @@ typedef struct array array_t;
 typedef struct string string_t;
 typedef struct shape shape_t;
 typedef struct object object_t;
+typedef struct clos clos_t;
 
 /**
 Word value type
@@ -69,6 +70,7 @@ typedef union
     string_t* string;
     shape_t* shape;
     object_t* object;
+    clos_t* clos;
 
     shapeidx_t shapeidx;
     tag_t tag;

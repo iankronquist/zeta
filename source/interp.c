@@ -468,33 +468,30 @@ value_t eval_expr(
         // Evaluate the closure expression
         value_t clos_val = eval_expr(clos_expr, fun, locals);
 
-        // TODO: check that tag is closure
-        //if (clos_val.tag != TAG_CLOSURE)
+        if (clos_val.tag != TAG_CLOS)
+        {
+            printf("expected closure in function call\n");
+            exit(-1);
+        }
 
-        // TODO: add clos struct to value union
+        clos_t* clos = clos_val.word.clos;
+        ast_fun_t* fun = clos->fun;
 
+        if (arg_exprs->len != fun->param_decls->len)
+        {
+            printf("argument count mismatch\n");
+            exit(-1);
+        }
 
-        // TODO: check that the argument count matches
-
-
-
-
-        // TODO
         // Allocate space for the local variables
-        //value_t* locals = alloca(sizeof(value_t) * unit_fun->local_decls->len);
-
-
+        value_t* locals = alloca(sizeof(value_t) * fun->local_decls->len);
 
         // TODO: evaluate the arguments (later)
 
         // TODO: allocate closure cells for the captured variables (later)
 
-
-
-        // TODO
         // Evaluate the unit function body in the local frame
-        //return eval_expr(unit_fun->body_expr, unit_fun, locals);
-        assert (false);
+        return eval_expr(fun->body_expr, fun, locals);
     }
 
     // Function/closure expression
@@ -626,6 +623,8 @@ void test_interp()
     test_eval_true("fun () 1\ntrue");
     test_eval_true("let f = fun () 1\ntrue");
 
+    // FIXME: segfaults
+    //test_eval_int("let f = fun () 1\nf()", 1);
 
 
 

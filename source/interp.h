@@ -22,7 +22,7 @@ extern shapeidx_t SHAPE_CLOS;
 /**
 Mutable cell object
 */
-typedef struct
+typedef struct cell
 {
     shapeidx_t shape;
 
@@ -39,7 +39,7 @@ typedef struct
 /**
 Function closure object
 */
-typedef struct
+typedef struct clos
 {
     shapeidx_t shape;
 
