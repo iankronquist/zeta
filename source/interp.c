@@ -6,6 +6,38 @@
 #include "parser.h"
 #include "vm.h"
 
+/// Shape indices for mutable cells and closures
+/// These are initialized in init_interp(), see interp.c
+shapeidx_t SHAPE_CELL;
+shapeidx_t SHAPE_CLOS;
+
+/**
+Initialize the interpreter
+*/
+void interp_init()
+{
+    // TODO:
+    //SHAPE_CELL
+    //SHAPE_CLOS
+}
+
+cell_t* cell_alloc()
+{
+    cell_t* cell = (cell_t*)vm_alloc(sizeof(cell_t), SHAPE_CELL);
+
+    return cell;
+}
+
+clos_t* clos_alloc(ast_fun_t* fun)
+{
+    clos_t* clos = (clos_t*)vm_alloc(
+        sizeof(clos_t) + sizeof(cell_t*) * fun->capt_vars->len,
+        SHAPE_STRING
+    );
+
+    return clos;
+}
+
 void find_decls(heapptr_t expr, ast_fun_t* fun)
 {
     // Get the shape of the AST node

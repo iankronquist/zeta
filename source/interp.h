@@ -12,6 +12,50 @@ semantics supported are limited.
 #define __INTERP_H__
 
 #include "vm.h"
+#include "parser.h"
+
+/// Shape indices for mutable cells and closures
+/// These are initialized in init_interp(), see interp.c
+extern shapeidx_t SHAPE_CELL;
+extern shapeidx_t SHAPE_CLOS;
+
+/**
+Mutable cell object
+*/
+typedef struct
+{
+    shapeidx_t shape;
+
+    /// Value word
+    word_t word;
+
+    /// Value tag
+    /// Note: for now the tag is encoded in the object
+    /// itself for easier interpreter integration
+    tag_t tag;
+
+} cell_t;
+
+/**
+Function closure object
+*/
+typedef struct
+{
+    shapeidx_t shape;
+
+    /// Function this is a closure of
+    ast_fun_t* fun;
+
+    /// Mutable cell pointers (for captured closure variables)
+    cell_t* cells[];
+
+} clos_t;
+
+cell_t* cell_alloc();
+
+clos_t* clos_alloc(ast_fun_t* fun);
+
+void interp_init();
 
 value_t eval_expr(heapptr_t expr, value_t* locals);
 
