@@ -16,9 +16,8 @@ Initialize the interpreter
 */
 void interp_init()
 {
-    // TODO:
-    //SHAPE_CELL
-    //SHAPE_CLOS
+    SHAPE_CELL = shape_alloc_empty()->idx;
+    SHAPE_CLOS = shape_alloc_empty()->idx;
 }
 
 cell_t* cell_alloc()
@@ -480,9 +479,12 @@ value_t eval_expr(
     // Function/closure expression
     if (shape == SHAPE_AST_FUN)
     {
-        // For now, return the function unchanged
-        // Later, we will have closure objects
-        return value_from_heapptr(expr, TAG_CLOS);
+        ast_fun_t* fun = (ast_fun_t*)expr;
+
+        // Allocate a closure of the function
+        clos_t* clos = clos_alloc(fun);
+
+        return value_from_heapptr((heapptr_t)clos, TAG_CLOS);
     }
 
     printf("eval error, unknown expression type, shapeidx=%d\n", get_shape(expr));
@@ -589,6 +591,7 @@ void test_interp()
     // Sequence expression
     test_eval_int("{ 2 3 }", 3);
     test_eval_int("{ 2 3+7 }", 10);
+    test_eval_int("3 7", 7);
 
     // If expression
     test_eval_int("if true then 1 else 0", 1);
@@ -600,6 +603,9 @@ void test_interp()
     test_eval_int("var x = 3\nx", 3);
     test_eval_int("let x = 7\nx+1", 8);
 
+    // Closures
+    test_eval_true("fun () 1\ntrue");
+    test_eval_true("let f = fun () 1\ntrue");
 
 
 

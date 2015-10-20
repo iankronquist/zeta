@@ -27,7 +27,10 @@ Initialize data needed by the Zeta core parser
 void parser_init()
 {
     // TODO: use shapes to describe AST node struct layouts
-    // Just dummy shapes for now
+    // - use helper functions to make this easier
+    // - assert that size according to shape matches sizeof(struct)
+    //
+    // For now, just dummy shapes
     SHAPE_AST_CONST = shape_alloc_empty()->idx;
     SHAPE_AST_REF = shape_alloc_empty()->idx;
     SHAPE_AST_DECL = shape_alloc_empty()->idx;
@@ -37,12 +40,6 @@ void parser_init()
     SHAPE_AST_IF = shape_alloc_empty()->idx;
     SHAPE_AST_CALL = shape_alloc_empty()->idx;
     SHAPE_AST_FUN = shape_alloc_empty()->idx;
-
-
-
-
-
-
 }
 
 char* srcpos_to_str(srcpos_t pos, char* buf)
