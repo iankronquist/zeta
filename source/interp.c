@@ -221,10 +221,11 @@ Evaluate an assignment expression
 value_t eval_assign(
     heapptr_t lhs_expr,
     heapptr_t rhs_expr,
+    ast_fun_t* fun,
     value_t* locals
 )
 {
-    value_t val = eval_expr(rhs_expr, locals);
+    value_t val = eval_expr(rhs_expr, fun, locals);
 
     shapeidx_t shape = get_shape(lhs_expr);
 
@@ -293,6 +294,7 @@ Evaluate an expression in a given frame
 */
 value_t eval_expr(
     heapptr_t expr, 
+    ast_fun_t* fun,
     value_t* locals
 )
 {
@@ -348,7 +350,7 @@ value_t eval_expr(
         for (size_t i = 0; i < array_expr->len; ++i)
         {
             heapptr_t expr = array_get(array_expr, i).word.heapptr;
-            value_t value = eval_expr(expr, locals);
+            value_t value = eval_expr(expr, fun, locals);
             array_set(val_array, i, value);
         }
 
@@ -362,10 +364,17 @@ value_t eval_expr(
 
         // Assignment
         if (binop->op == &OP_ASSIGN)
-            return eval_assign(binop->left_expr, binop->right_expr, locals);
+        {
+            return eval_assign(
+                binop->left_expr, 
+                binop->right_expr, 
+                fun,
+                locals
+            );
+        }
 
-        value_t v0 = eval_expr(binop->left_expr, locals);
-        value_t v1 = eval_expr(binop->right_expr, locals);
+        value_t v0 = eval_expr(binop->left_expr, fun, locals);
+        value_t v1 = eval_expr(binop->right_expr, fun, locals);
         int64_t i0 = v0.word.int64;
         int64_t i1 = v1.word.int64;
 
@@ -406,7 +415,7 @@ value_t eval_expr(
     {
         ast_unop_t* unop = (ast_unop_t*)expr;
 
-        value_t v0 = eval_expr(unop->expr, locals);
+        value_t v0 = eval_expr(unop->expr, fun, locals);
 
         if (unop->op == &OP_NEG)
             return value_from_int64(-v0.word.int64);
@@ -429,7 +438,7 @@ value_t eval_expr(
         for (size_t i = 0; i < expr_list->len; ++i)
         {
             heapptr_t expr = array_get(expr_list, i).word.heapptr;
-            value = eval_expr(expr, locals);
+            value = eval_expr(expr, fun, locals);
         }
 
         // Return the value of the last expression
@@ -441,39 +450,51 @@ value_t eval_expr(
     {
         ast_if_t* ifexpr = (ast_if_t*)expr;
 
-        value_t t = eval_expr(ifexpr->test_expr, locals);
+        value_t t = eval_expr(ifexpr->test_expr, fun, locals);
 
         if (eval_truth(t))
-            return eval_expr(ifexpr->then_expr, locals);
+            return eval_expr(ifexpr->then_expr, fun, locals);
         else
-            return eval_expr(ifexpr->else_expr, locals);
+            return eval_expr(ifexpr->else_expr, fun, locals);
     }
 
     // Call expression
     if (shape == SHAPE_AST_CALL)
     {
         ast_call_t* callexpr = (ast_call_t*)expr;
-        heapptr_t fun_expr = callexpr->fun_expr;
+        heapptr_t clos_expr = callexpr->fun_expr;
         array_t* arg_exprs = callexpr->arg_exprs;
 
-        if (get_shape(fun_expr) == SHAPE_AST_REF && arg_exprs->len == 1)
-        {
-            ast_ref_t* fun_ident = (ast_ref_t*)fun_expr;
-            char* name_cstr = fun_ident->name->data;
+        // Evaluate the closure expression
+        value_t clos_val = eval_expr(clos_expr, fun, locals);
 
-            heapptr_t arg_expr = array_get(arg_exprs, 0).word.heapptr;
-            value_t arg_val = eval_expr(arg_expr, locals);
+        // TODO: check that tag is closure
+        //if (clos_val.tag != TAG_CLOSURE)
 
-            if (strncmp(name_cstr, "println", strlen("println")) == 0)
-            {
-                value_print(arg_val);
-                putchar('\n');
-                return VAL_TRUE;
-            }
-        }
+        // TODO: add clos struct to value union
 
-        printf("eval error, unknown function in call expression\n");
-        return VAL_FALSE;
+
+        // TODO: check that the argument count matches
+
+
+
+
+        // TODO
+        // Allocate space for the local variables
+        //value_t* locals = alloca(sizeof(value_t) * unit_fun->local_decls->len);
+
+
+
+        // TODO: evaluate the arguments (later)
+
+        // TODO: allocate closure cells for the captured variables (later)
+
+
+
+        // TODO
+        // Evaluate the unit function body in the local frame
+        //return eval_expr(unit_fun->body_expr, unit_fun, locals);
+        assert (false);
     }
 
     // Function/closure expression
@@ -497,17 +518,11 @@ This can also be used to evaluate files
 */
 value_t eval_str(const char* cstr, const char* src_name)
 {
-    // TODO: feed src_name into input
-
-    size_t len = strlen(cstr);
-
-    // Allocate a hosted string object
-    string_t* str = string_alloc(len);
-
-    strncpy(str->data, cstr, len);
-
     // Create a parser input stream object
-    input_t input = input_from_string(str);
+    input_t input = input_from_string(
+        vm_get_cstr(cstr),
+        vm_get_cstr(src_name)
+    );
 
     // Parse the input as a source code unit
     ast_fun_t* unit_fun = parse_unit(&input);
@@ -518,8 +533,12 @@ value_t eval_str(const char* cstr, const char* src_name)
     // Allocate space for the local variables
     value_t* locals = alloca(sizeof(value_t) * unit_fun->local_decls->len);
 
+    // TODO: allocate the closure cells
+
+
+
     // Evaluate the unit function body in the local frame
-    return eval_expr(unit_fun->body_expr, locals);
+    return eval_expr(unit_fun->body_expr, unit_fun, locals);
 }
 
 void test_eval(char* cstr, value_t expected)

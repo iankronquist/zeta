@@ -57,7 +57,7 @@ clos_t* clos_alloc(ast_fun_t* fun);
 
 void interp_init();
 
-value_t eval_expr(heapptr_t expr, value_t* locals);
+value_t eval_expr(heapptr_t expr, ast_fun_t* fun, value_t* locals);
 
 value_t eval_str(const char* cstr, const char* src_name);
 

@@ -42,11 +42,14 @@ Input stream, character/token stream for parsing functions
 */
 typedef struct
 {
-    /// Internal string (hosted heap)
+    /// Internal source string (hosted heap)
     string_t* str;
 
     /// Current index
     uint32_t idx;
+
+    /// Source name string
+    string_t* src_name;
 
     /// Current source position
     srcpos_t pos;
@@ -257,7 +260,7 @@ typedef struct ast_fun
 
 char* srcpos_to_str(srcpos_t pos, char* buf);
 
-input_t input_from_string(string_t* str);
+input_t input_from_string(string_t* str, string_t* src_name);
 bool input_eof(input_t* input);
 char input_peek_ch(input_t* input);
 void input_eat_ws(input_t* input);

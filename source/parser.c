@@ -48,11 +48,12 @@ char* srcpos_to_str(srcpos_t pos, char* buf)
     return buf;
 }
 
-input_t input_from_string(string_t* str)
+input_t input_from_string(string_t* str, string_t* src_name)
 {
     input_t input;
     input.str = str;
     input.idx = 0;
+    input.src_name = src_name;
     input.pos.lineNo = 0;
     input.pos.colNo = 0;
     return input;
@@ -1101,8 +1102,10 @@ void test_parse(char* cstr)
 {
     //printf("%s\n", cstr);
 
-    string_t* str = vm_get_cstr(cstr);
-    input_t input = input_from_string(str);
+    input_t input = input_from_string(
+        vm_get_cstr(cstr),
+        vm_get_cstr("parser_test")
+    );
 
     ast_fun_t* unit = parse_unit(&input);
 
@@ -1131,8 +1134,10 @@ void test_parse_fail(char* cstr)
 {
     //printf("%s\n", cstr);
 
-    string_t* str = vm_get_cstr(cstr);
-    input_t input = input_from_string(str);
+    input_t input = input_from_string(
+        vm_get_cstr(cstr),
+        vm_get_cstr("parser_fail_test")
+    );
 
     ast_fun_t* unit = parse_unit(&input);
 
