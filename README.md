@@ -17,7 +17,7 @@ design.
 
 Requirements:
 
-- A C compiler, GCC recommended (clang untested)
+- A C compiler, GCC 5+ recommended (clang and others untested)
 
 - GNU make
 

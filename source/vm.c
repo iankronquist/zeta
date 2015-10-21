@@ -870,6 +870,8 @@ value_t object_get_prop(object_t* obj, string_t* prop_name)
 
 void test_vm()
 {
+    printf("core VM tests\n");
+
     assert (sizeof(word_t) == 8);
     assert (sizeof(value_t) == 16);
 

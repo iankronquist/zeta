@@ -1154,6 +1154,8 @@ void test_parse_fail(char* cstr)
 /// Test the functionality of the parser
 void test_parser()
 {
+    printf("core parser tests\n");
+
     // Identifiers
     test_parse("foobar");
     test_parse("  foo_bar  ");

@@ -44,6 +44,25 @@ void find_decls(heapptr_t expr, ast_fun_t* fun)
     // Get the shape of the AST node
     shapeidx_t shape = get_shape(expr);
 
+    // Constants and strings, do nothing
+    if (shape == SHAPE_AST_CONST ||
+        shape == SHAPE_STRING)
+    {
+        return;
+    }
+
+    // Array literal expression
+    if (shape == SHAPE_ARRAY)
+    {
+        array_t* array_expr = (array_t*)expr;
+        array_t* val_array = array_alloc(array_expr->len);
+        for (size_t i = 0; i < array_expr->len; ++i)
+            find_decls(array_get(array_expr, i).word.heapptr, fun);
+
+        return;
+    }
+
+    // Variable or constant declaration (let/var)
     if (shape == SHAPE_AST_DECL)
     {
         ast_decl_t* decl = (ast_decl_t*)expr;
@@ -59,6 +78,12 @@ void find_decls(heapptr_t expr, ast_fun_t* fun)
         decl->idx = fun->local_decls->len;
         array_set_obj(fun->local_decls, decl->idx, (heapptr_t)decl);
 
+        return;
+    }
+
+    // Variable reference
+    if (shape == SHAPE_AST_REF)
+    {
         return;
     }
 
@@ -78,9 +103,34 @@ void find_decls(heapptr_t expr, ast_fun_t* fun)
     if (shape == SHAPE_AST_BINOP)
     {
         ast_binop_t* binop = (ast_binop_t*)expr;
-
         find_decls(binop->left_expr, fun);
         find_decls(binop->right_expr, fun);
+        return;
+    }
+
+    // Unary operator (e.g. -1)
+    if (shape == SHAPE_AST_UNOP)
+    {
+        ast_unop_t* unop = (ast_unop_t*)expr;
+        find_decls(unop->expr, fun);
+        return;
+    }
+
+    // If expression
+    if (shape == SHAPE_AST_IF)
+    {
+        ast_if_t* ifexpr = (ast_if_t*)expr;
+        find_decls(ifexpr->test_expr, fun);
+        find_decls(ifexpr->then_expr, fun);
+        find_decls(ifexpr->else_expr, fun);
+        return;
+    }
+
+    // Function/closure expression
+    if (shape == SHAPE_AST_FUN)
+    {
+        // Do nothing. Variables declared in the nested
+        // function are not of this scope
         return;
     }
 
@@ -98,7 +148,8 @@ void find_decls(heapptr_t expr, ast_fun_t* fun)
         return;
     }
 
-    // TODO: complete, add assertion
+    // Unsupported AST node type
+    assert (false);
 }
 
 void var_res(heapptr_t expr, ast_fun_t* fun)
@@ -106,7 +157,31 @@ void var_res(heapptr_t expr, ast_fun_t* fun)
     // Get the shape of the AST node
     shapeidx_t shape = get_shape(expr);
 
-    // If this is a variable reference
+    // Constants and strings, do nothing
+    if (shape == SHAPE_AST_CONST ||
+        shape == SHAPE_STRING)
+    {
+        return;
+    }
+
+    // Array literal expression
+    if (shape == SHAPE_ARRAY)
+    {
+        array_t* array_expr = (array_t*)expr;
+        array_t* val_array = array_alloc(array_expr->len);
+        for (size_t i = 0; i < array_expr->len; ++i)
+            var_res(array_get(array_expr, i).word.heapptr, fun);
+
+        return;
+    }
+
+    // Variable declaration, do nothing
+    if (shape == SHAPE_AST_DECL)
+    {
+        return;
+    }
+
+    // Variable reference
     if (shape == SHAPE_AST_REF)
     {
         ast_ref_t* ref = (ast_ref_t*)expr;
@@ -126,7 +201,17 @@ void var_res(heapptr_t expr, ast_fun_t* fun)
                 // If the variable is from this scope
                 if (cur == fun)
                 {
+                    assert (local->idx < cur->local_decls->len);
+
+                    // Store the index of this local
                     ref->idx = local->idx;
+
+                    /*
+                    printf("resolved local\n");
+                    string_print(ref->name); printf("\n");
+                    printf("local->idx=%d\n", local->idx);
+                    printf("\n");*/
+
                     return;
                 }
 
@@ -134,6 +219,12 @@ void var_res(heapptr_t expr, ast_fun_t* fun)
                 // Mark the declaration as captured
                 local->capt = true;
 
+                // TODO;
+                // Assign the variable a captured mutable cell index
+                // Need to check if we've already captured it
+                assert (false);
+
+                // FIXME: only do this if we haven't already captured it
                 // Thread the local as a closure variable
                 ast_fun_t* clos;
                 for (clos = fun; clos != cur; clos = clos->parent)
@@ -148,6 +239,12 @@ void var_res(heapptr_t expr, ast_fun_t* fun)
                 return;
             }
         }
+
+        /*
+        printf("global ref\n");
+        string_print(ref->name);
+        printf("\n");
+        */
 
         // If unresolved, mark as global
         ref->global = true;
@@ -177,6 +274,35 @@ void var_res(heapptr_t expr, ast_fun_t* fun)
         return;
     }
 
+    // Unary operator (e.g. -a)
+    if (shape == SHAPE_AST_UNOP)
+    {
+        ast_unop_t* unop = (ast_unop_t*)expr;
+        var_res(unop->expr, fun);
+        return;
+    }
+
+    // If expression
+    if (shape == SHAPE_AST_IF)
+    {
+        ast_if_t* ifexpr = (ast_if_t*)expr;
+        var_res(ifexpr->test_expr, fun);
+        var_res(ifexpr->then_expr, fun);
+        var_res(ifexpr->else_expr, fun);
+        return;
+    }
+
+    // Function/closure expression
+    if (shape == SHAPE_AST_FUN)
+    {
+        ast_fun_t* child_fun = (ast_fun_t*)expr;
+
+        // Resolve variable references in the nested child function
+        var_res_pass(child_fun, fun);
+
+        return;
+    }
+
     // Function call
     if (shape == SHAPE_AST_CALL)
     {
@@ -191,16 +317,8 @@ void var_res(heapptr_t expr, ast_fun_t* fun)
         return;
     }
 
-    // Function/closure expression
-    if (shape == SHAPE_AST_FUN)
-    {
-        ast_fun_t* child_fun = (ast_fun_t*)expr;
-
-        // Resolve variables in the nested child function
-        var_res_pass(child_fun, fun);
-    }
-
-    // TODO: complete, add assertion
+    // Unsupported AST node type
+    assert (false);
 }
 
 /**
@@ -213,7 +331,10 @@ void var_res_pass(ast_fun_t* fun, ast_fun_t* parent)
     // Add the function parameters to the local scope
     for (size_t i = 0; i < fun->param_decls->len; ++i)
     {
-        array_set(fun->local_decls, i, array_get(fun->param_decls, i));
+        value_t decl_val = array_get(fun->param_decls, i);
+        ast_decl_t* decl = (ast_decl_t*)decl_val.word.heapptr;
+        decl->idx = fun->local_decls->len;
+        array_set(fun->local_decls, i, decl_val);
     }
 
     // Find declarations in the function body
@@ -344,11 +465,22 @@ value_t eval_expr(
         // TODO: handle globals
         assert (!ref->global);
 
+        if (ref->idx > fun->local_decls->len)
+        {
+            printf("invalid variable reference\n");
+            printf("ref->name="); string_print(ref->name); printf("\n");
+            printf("ref->idx=%d\n", ref->idx);
+            printf("local_decls->len=%d\n", fun->local_decls->len);
+            exit(-1);
+        }
+
         return locals[ref->idx];
     }
 
     if (shape == SHAPE_AST_CONST)
     {
+        //printf("constant\n");
+
         ast_const_t* cst = (ast_const_t*)expr;
         return cst->val;
     }
@@ -363,6 +495,7 @@ value_t eval_expr(
     {
         array_t* array_expr = (array_t*)expr;
 
+        // Array of values to be produced
         array_t* val_array = array_alloc(array_expr->len);
 
         for (size_t i = 0; i < array_expr->len; ++i)
@@ -476,9 +609,22 @@ value_t eval_expr(
             return eval_expr(ifexpr->else_expr, fun, locals);
     }
 
+    // Function/closure expression
+    if (shape == SHAPE_AST_FUN)
+    {
+        ast_fun_t* fun = (ast_fun_t*)expr;
+
+        // Allocate a closure of the function
+        clos_t* clos = clos_alloc(fun);
+
+        return value_from_heapptr((heapptr_t)clos, TAG_CLOS);
+    }
+
     // Call expression
     if (shape == SHAPE_AST_CALL)
     {
+        //printf("evaluating call\n");
+
         ast_call_t* callexpr = (ast_call_t*)expr;
         heapptr_t clos_expr = callexpr->fun_expr;
         array_t* arg_exprs = callexpr->arg_exprs;
@@ -507,23 +653,24 @@ value_t eval_expr(
             sizeof(value_t) * fptr->local_decls->len
         );
 
-        // TODO: evaluate the arguments (later)
+        // Evaluate the argument values
+        for (size_t i = 0; i < arg_exprs->len; ++i)
+        {
+            //printf("evaluating arg %ld\n", i);
+
+            callee_locals[i] = eval_expr(
+                array_get_ptr(arg_exprs, i),
+                fun,
+                locals
+            );
+        }
 
         // TODO: allocate closure cells for the captured variables (later)
 
+        //printf("evaluating function body\n");
+
         // Evaluate the unit function body in the local frame
-        return eval_expr(fun->body_expr, fptr, locals);
-    }
-
-    // Function/closure expression
-    if (shape == SHAPE_AST_FUN)
-    {
-        ast_fun_t* fun = (ast_fun_t*)expr;
-
-        // Allocate a closure of the function
-        clos_t* clos = clos_alloc(fun);
-
-        return value_from_heapptr((heapptr_t)clos, TAG_CLOS);
+        return eval_expr(fptr->body_expr, fptr, callee_locals);
     }
 
     printf("eval error, unknown expression type, shapeidx=%d\n", get_shape(expr));
@@ -551,7 +698,7 @@ value_t eval_str(const char* cstr, const char* src_name)
     // Allocate space for the local variables
     value_t* locals = alloca(sizeof(value_t) * unit_fun->local_decls->len);
 
-    // TODO: allocate the closure cells
+    // TODO: allocate the closure cells for the unit
 
 
 
@@ -561,6 +708,8 @@ value_t eval_str(const char* cstr, const char* src_name)
 
 void test_eval(char* cstr, value_t expected)
 {
+    printf("%s\n", cstr);
+
     value_t value = eval_str(cstr, "test");
 
     if (!value_equals(value, expected))
@@ -591,6 +740,8 @@ void test_eval_false(char* cstr)
 
 void test_interp()
 {
+    printf("core interpreter tests\n");
+
     test_eval_int("0", 0);
     test_eval_int("1", 1);
     test_eval_int("7", 7);
@@ -637,13 +788,22 @@ void test_interp()
     test_eval_int("if not true then 1 else 0", 0);
 
     // Variable declarations
-    test_eval_int("var x = 3\nx", 3);
-    test_eval_int("let x = 7\nx+1", 8);
+    test_eval_int("(var x = 3) x", 3);
+    test_eval_int("(let x = 7) x+1", 8);
 
     // Closures
-    test_eval_true("fun () 1\ntrue");
-    test_eval_true("let f = fun () 1\ntrue");
-    test_eval_int("let f = fun () 1\nf()", 1);
+    test_eval_int("(fun () 1) 1", 1);
+    test_eval_int("(let f = fun () 1) 1", 1);
+    test_eval_int("(let f = fun () 7) f()", 7);
+    test_eval_int("(let f = fun (n) n) f(8)", 8);
+
+
+    // TODO: test a call with two args, to make sure position is correct
+    // sub(a, b) a - b
+
+
+
+    // TODO: recursive function, closure variables, fibonacci
 
 
 

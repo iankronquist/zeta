@@ -19,4 +19,6 @@ release: *.c
 clean:
 	rm -f *.o
 
+# Tells make which targets are not files. 
 .PHONY: test test_gdb debug release all clean
+
