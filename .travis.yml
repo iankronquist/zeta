@@ -1,19 +1,17 @@
+# Required packages
+addons:
+    apt:
+        packages:
+            - gcc-5
+
 language: c
 compiler: gcc
 env: GCC_VERSION=5
 
-# Required packages
-addons:
-    apt:
-#       sources:
-#           - ubuntu-toolchain-r-test
-        packages:
-            - gcc-5
-
 # Run only on the master branch
 branches:
- only:
-  - master
+    only:
+        - master
 
 # Build a test binary and run tests
 script: make -C source test
