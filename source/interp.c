@@ -34,6 +34,8 @@ clos_t* clos_alloc(ast_fun_t* fun)
         SHAPE_STRING
     );
 
+    clos->fun = fun;
+
     return clos;
 }
 
@@ -56,12 +58,6 @@ void find_decls(heapptr_t expr, ast_fun_t* fun)
 
         decl->idx = fun->local_decls->len;
         array_set_obj(fun->local_decls, decl->idx, (heapptr_t)decl);
-
-        /*
-        printf("found decl\n");
-        string_print(decl->name);
-        printf("\n");
-        */
 
         return;
     }
@@ -88,6 +84,20 @@ void find_decls(heapptr_t expr, ast_fun_t* fun)
         return;
     }
 
+    // Function call
+    if (shape == SHAPE_AST_CALL)
+    {
+        ast_call_t* callexpr = (ast_call_t*)expr;
+        array_t* arg_exprs = callexpr->arg_exprs;
+
+        find_decls(callexpr->fun_expr, fun);
+
+        for (size_t i = 0; i < arg_exprs->len; ++i)
+            find_decls(array_get_ptr(arg_exprs, i), fun);
+
+        return;
+    }
+
     // TODO: complete, add assertion
 }
 
@@ -96,6 +106,7 @@ void var_res(heapptr_t expr, ast_fun_t* fun)
     // Get the shape of the AST node
     shapeidx_t shape = get_shape(expr);
 
+    // If this is a variable reference
     if (shape == SHAPE_AST_REF)
     {
         ast_ref_t* ref = (ast_ref_t*)expr;
@@ -109,42 +120,34 @@ void var_res(heapptr_t expr, ast_fun_t* fun)
             {
                 ast_decl_t* local = (ast_decl_t*)array_get_ptr(cur->local_decls, i);
 
-                if (local->name == ref->name)
+                if (local->name != ref->name)
+                    continue;
+
+                // If the variable is from this scope
+                if (cur == fun)
                 {
-                    // If the variable is from this scope
-                    if (cur == fun)
-                    {
-                        ref->idx = local->idx;
-                    }
-
-                    // The variable is from an outer scope
-                    else
-                    {
-                        // Mark the declaration as captured
-                        local->capt = true;
-
-                        // Thread the local as a closure variable
-                        ast_fun_t* clos;
-                        for (clos = fun; clos != cur; clos = clos->parent)
-                        {
-                            array_set_obj(
-                                clos->capt_vars, 
-                                clos->capt_vars->len,
-                                (heapptr_t)local
-                            );
-                        }
-                    }
-
+                    ref->idx = local->idx;
                     return;
                 }
+
+                // The variable is from an outer scope
+                // Mark the declaration as captured
+                local->capt = true;
+
+                // Thread the local as a closure variable
+                ast_fun_t* clos;
+                for (clos = fun; clos != cur; clos = clos->parent)
+                {
+                    array_set_obj(
+                        clos->capt_vars, 
+                        clos->capt_vars->len,
+                        (heapptr_t)local
+                    );
+                }
+
+                return;
             }
         }
-
-        /*
-        printf("found global\n");
-        string_print(ref->name);
-        printf("\n");
-        */
 
         // If unresolved, mark as global
         ref->global = true;
@@ -172,6 +175,29 @@ void var_res(heapptr_t expr, ast_fun_t* fun)
         var_res(binop->left_expr, fun);
         var_res(binop->right_expr, fun);
         return;
+    }
+
+    // Function call
+    if (shape == SHAPE_AST_CALL)
+    {
+        ast_call_t* callexpr = (ast_call_t*)expr;
+        array_t* arg_exprs = callexpr->arg_exprs;
+
+        var_res(callexpr->fun_expr, fun);
+
+        for (size_t i = 0; i < arg_exprs->len; ++i)
+            var_res(array_get_ptr(arg_exprs, i), fun);
+
+        return;
+    }
+
+    // Function/closure expression
+    if (shape == SHAPE_AST_FUN)
+    {
+        ast_fun_t* child_fun = (ast_fun_t*)expr;
+
+        // Resolve variables in the nested child function
+        var_res_pass(child_fun, fun);
     }
 
     // TODO: complete, add assertion
@@ -313,14 +339,6 @@ value_t eval_expr(
         {
             // TODO
             assert (false);
-
-
-
-
-
-
-
-
         }
 
         // TODO: handle globals
@@ -475,23 +493,26 @@ value_t eval_expr(
         }
 
         clos_t* clos = clos_val.word.clos;
-        ast_fun_t* fun = clos->fun;
+        ast_fun_t* fptr = clos->fun;
+        assert (fptr != NULL);
 
-        if (arg_exprs->len != fun->param_decls->len)
+        if (arg_exprs->len != fptr->param_decls->len)
         {
             printf("argument count mismatch\n");
             exit(-1);
         }
 
         // Allocate space for the local variables
-        value_t* locals = alloca(sizeof(value_t) * fun->local_decls->len);
+        value_t* callee_locals = alloca(
+            sizeof(value_t) * fptr->local_decls->len
+        );
 
         // TODO: evaluate the arguments (later)
 
         // TODO: allocate closure cells for the captured variables (later)
 
         // Evaluate the unit function body in the local frame
-        return eval_expr(fun->body_expr, fun, locals);
+        return eval_expr(fun->body_expr, fptr, locals);
     }
 
     // Function/closure expression
@@ -622,9 +643,10 @@ void test_interp()
     // Closures
     test_eval_true("fun () 1\ntrue");
     test_eval_true("let f = fun () 1\ntrue");
+    test_eval_int("let f = fun () 1\nf()", 1);
 
-    // FIXME: segfaults
-    //test_eval_int("let f = fun () 1\nf()", 1);
+
+
 
 
 
