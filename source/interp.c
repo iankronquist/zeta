@@ -1,10 +1,14 @@
 #include <stdio.h>
+#include <sys/param.h>
 #include <string.h>
 #include <assert.h>
-#include <alloca.h>
+#ifdef BSD4_4
+    #include <stdlib.h>
+#else
+    #include <alloca.h>
+#endif
 #include "interp.h"
 #include "parser.h"
-#include "vm.h"
 
 /// Shape indices for mutable cells and closures
 /// These are initialized in init_interp(), see interp.c
