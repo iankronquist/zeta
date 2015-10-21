@@ -1,11 +1,20 @@
-CC=gcc
-CFLAGS=-std=c99
+CC?=gcc
+CFLAGS=-std=c11
 
 OS := $(shell uname)
 ifeq ($(OS),Linux) 
   CFLAGS+=-lmcheck
 else ifeq ($(OS),FreeBSD)
   CC=gcc5
+endif
+
+GCC_MAJ := $(shell expr `$(CC) -dumpversion | cut -d. -f1 | xargs printf '%02d'`)
+GCC_MIN := $(shell expr `$(CC) -dumpversion | cut -d. -f2 | xargs printf '%02d'`)
+GCC_4_9 := $(shell [ $(GCC_MAJ) -gt 4 -o \( $(GCC_MAJ) -eq 4 -a $(GCC_MIN) -ge 8 \) ] && echo true)
+
+ifneq ($(GCC_4_9),true)
+GCC_VER := $(shell expr `$(CC) -dumpversion`)
+$(error GCC version required is 4.9+ (your version $(GCC_VER)).)
 endif
 
 all: debug
