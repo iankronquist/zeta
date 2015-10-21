@@ -1,0 +1,12 @@
+language: c
+compiler: gcc
+
+# build a test binary and run tests
+script: make -C source test
+
+# branch settings
+branches:
+ # only run for these branches
+ only:
+  - master
+

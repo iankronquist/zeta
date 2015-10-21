@@ -368,11 +368,11 @@ Evaluate an assignment expression
 value_t eval_assign(
     heapptr_t lhs_expr,
     heapptr_t rhs_expr,
-    ast_fun_t* fun,
+    clos_t* clos,
     value_t* locals
 )
 {
-    value_t val = eval_expr(rhs_expr, fun, locals);
+    value_t val = eval_expr(rhs_expr, clos, locals);
 
     shapeidx_t shape = get_shape(lhs_expr);
 
@@ -441,7 +441,7 @@ Evaluate an expression in a given frame
 */
 value_t eval_expr(
     heapptr_t expr, 
-    ast_fun_t* fun,
+    clos_t* clos,
     value_t* locals
 )
 {
@@ -464,6 +464,8 @@ value_t eval_expr(
 
         // TODO: handle globals
         assert (!ref->global);
+
+        ast_fun_t* fun = clos->fun;
 
         if (ref->idx > fun->local_decls->len)
         {
@@ -501,7 +503,7 @@ value_t eval_expr(
         for (size_t i = 0; i < array_expr->len; ++i)
         {
             heapptr_t expr = array_get(array_expr, i).word.heapptr;
-            value_t value = eval_expr(expr, fun, locals);
+            value_t value = eval_expr(expr, clos, locals);
             array_set(val_array, i, value);
         }
 
@@ -519,13 +521,13 @@ value_t eval_expr(
             return eval_assign(
                 binop->left_expr, 
                 binop->right_expr, 
-                fun,
+                clos,
                 locals
             );
         }
 
-        value_t v0 = eval_expr(binop->left_expr, fun, locals);
-        value_t v1 = eval_expr(binop->right_expr, fun, locals);
+        value_t v0 = eval_expr(binop->left_expr, clos, locals);
+        value_t v1 = eval_expr(binop->right_expr, clos, locals);
         int64_t i0 = v0.word.int64;
         int64_t i1 = v1.word.int64;
 
@@ -566,7 +568,7 @@ value_t eval_expr(
     {
         ast_unop_t* unop = (ast_unop_t*)expr;
 
-        value_t v0 = eval_expr(unop->expr, fun, locals);
+        value_t v0 = eval_expr(unop->expr, clos, locals);
 
         if (unop->op == &OP_NEG)
             return value_from_int64(-v0.word.int64);
@@ -589,7 +591,7 @@ value_t eval_expr(
         for (size_t i = 0; i < expr_list->len; ++i)
         {
             heapptr_t expr = array_get(expr_list, i).word.heapptr;
-            value = eval_expr(expr, fun, locals);
+            value = eval_expr(expr, clos, locals);
         }
 
         // Return the value of the last expression
@@ -601,12 +603,12 @@ value_t eval_expr(
     {
         ast_if_t* ifexpr = (ast_if_t*)expr;
 
-        value_t t = eval_expr(ifexpr->test_expr, fun, locals);
+        value_t t = eval_expr(ifexpr->test_expr, clos, locals);
 
         if (eval_truth(t))
-            return eval_expr(ifexpr->then_expr, fun, locals);
+            return eval_expr(ifexpr->then_expr, clos, locals);
         else
-            return eval_expr(ifexpr->else_expr, fun, locals);
+            return eval_expr(ifexpr->else_expr, clos, locals);
     }
 
     // Function/closure expression
@@ -630,7 +632,7 @@ value_t eval_expr(
         array_t* arg_exprs = callexpr->arg_exprs;
 
         // Evaluate the closure expression
-        value_t clos_val = eval_expr(clos_expr, fun, locals);
+        value_t clos_val = eval_expr(clos_expr, clos, locals);
 
         if (clos_val.tag != TAG_CLOS)
         {
@@ -638,8 +640,8 @@ value_t eval_expr(
             exit(-1);
         }
 
-        clos_t* clos = clos_val.word.clos;
-        ast_fun_t* fptr = clos->fun;
+        clos_t* callee = clos_val.word.clos;
+        ast_fun_t* fptr = callee->fun;
         assert (fptr != NULL);
 
         if (arg_exprs->len != fptr->param_decls->len)
@@ -660,17 +662,17 @@ value_t eval_expr(
 
             callee_locals[i] = eval_expr(
                 array_get_ptr(arg_exprs, i),
-                fun,
+                clos,
                 locals
             );
         }
 
-        // TODO: allocate closure cells for the captured variables (later)
+        // TODO: allocate closure cells for the callee's captured variables
 
         //printf("evaluating function body\n");
 
         // Evaluate the unit function body in the local frame
-        return eval_expr(fptr->body_expr, fptr, callee_locals);
+        return eval_expr(fptr->body_expr, callee, callee_locals);
     }
 
     printf("eval error, unknown expression type, shapeidx=%d\n", get_shape(expr));
@@ -698,12 +700,13 @@ value_t eval_str(const char* cstr, const char* src_name)
     // Allocate space for the local variables
     value_t* locals = alloca(sizeof(value_t) * unit_fun->local_decls->len);
 
+    // Allocate a closure object for the unit
+    clos_t* unit_clos = clos_alloc(unit_fun);
+
     // TODO: allocate the closure cells for the unit
 
-
-
     // Evaluate the unit function body in the local frame
-    return eval_expr(unit_fun->body_expr, unit_fun, locals);
+    return eval_expr(unit_fun->body_expr, unit_clos, locals);
 }
 
 void test_eval(char* cstr, value_t expected)
@@ -796,10 +799,11 @@ void test_interp()
     test_eval_int("(let f = fun () 1) 1", 1);
     test_eval_int("(let f = fun () 7) f()", 7);
     test_eval_int("(let f = fun (n) n) f(8)", 8);
+    test_eval_int("(let f = fun (a, b) a - b) f(7, 2)", 5);
 
+    // TODO: test closure variable capture
+    //test_eval_int("(let a = 3) (let f = fun () a) f()", 3);
 
-    // TODO: test a call with two args, to make sure position is correct
-    // sub(a, b) a - b
 
 
 
