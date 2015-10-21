@@ -1,0 +1,9 @@
+language: c
+
+compiler:
+  - gcc
+  - clang
+script:
+  - cd source
+  - make
+  - ./zeta --test
