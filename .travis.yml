@@ -1,12 +1,19 @@
 language: c
 compiler: gcc
 
-# build a test binary and run tests
-script: make -C source test
+# Required packages
+addons:
+    apt:
+#       sources:
+#           - ubuntu-toolchain-r-test
+        packages:
+            - gcc-5
 
-# branch settings
+# Run only on the master branch
 branches:
- # only run for these branches
  only:
   - master
+
+# Build a test binary and run tests
+script: make -C source test
 
