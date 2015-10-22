@@ -1,4 +1,4 @@
-CC=gcc
+CC?=gcc
 CFLAGS=-std=c11
 
 all: debug
