@@ -429,6 +429,15 @@ value_t eval_assign(
             return val;
         }
 
+        ast_fun_t* fun = clos->fun;
+        if (ref->idx > fun->local_decls->len)
+        {
+            printf("assignment to invalid index\n");
+            exit(-1);
+        }
+
+        locals[ref->idx] = val;
+
         return val;
     }
 
@@ -466,7 +475,6 @@ value_t eval_expr(
         assert (!ref->global);
 
         ast_fun_t* fun = clos->fun;
-
         if (ref->idx > fun->local_decls->len)
         {
             printf("invalid variable reference\n");
@@ -722,6 +730,10 @@ void test_eval(char* cstr, value_t expected)
             cstr
         );
 
+        printf("got value:\n");
+        value_print(value);
+        printf("\n");
+
         exit(-1);
     }
 }
@@ -791,15 +803,17 @@ void test_interp()
     test_eval_int("if not true then 1 else 0", 0);
 
     // Variable declarations
-    test_eval_int("(var x = 3) x", 3);
-    test_eval_int("(let x = 7) x+1", 8);
+    test_eval_int("var x = 3   x         ", 3);
+    test_eval_int("let x = 7   x+1       ", 8);
+    test_eval_int("var x = 3   x = 4     x", 4);
+    test_eval_int("var x = 3   x = x+1   x", 4);
 
-    // Closures
-    test_eval_int("(fun () 1) 1", 1);
-    test_eval_int("(let f = fun () 1) 1", 1);
-    test_eval_int("(let f = fun () 7) f()", 7);
-    test_eval_int("(let f = fun (n) n) f(8)", 8);
-    test_eval_int("(let f = fun (a, b) a - b) f(7, 2)", 5);
+    // Closures and function calls
+    test_eval_int("fun () 1                   1", 1);
+    test_eval_int("let f = fun () 1           1", 1);
+    test_eval_int("let f = fun () 7           f()", 7);
+    test_eval_int("let f = fun (n) n          f(8)", 8);
+    test_eval_int("let f = fun (a, b) a - b   f(7, 2)", 5);
 
     // TODO: test closure variable capture
     //test_eval_int("(let a = 3) (let f = fun () a) f()", 3);

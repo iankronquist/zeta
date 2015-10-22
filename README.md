@@ -170,6 +170,24 @@ export(foo, 'foo')
 Everything is still in flux. Your comments on the syntax and above
 example are welcome.
 
+One issue I'm aware of that may or may not be problematic in practice is
+that the parser is greedy, and the lack of semicolons could make it slightly
+confusing to people. For instance:
+
+```
+// this is a sequence of two expressions, x then y
+x y
+
+// This is interpreted as a function call because of the
+// second set of parentheses
+(x+y)
+(z+w) 
+```
+
+We may or may not want to add an optional semicolon operator which only
+serves to terminate the parsing of an expression. I expect these issues
+will be easier to work out once we start writing more Zeta code.
+
 ## Language Extensions
 
 Zeta's "killer feature" will be the ability to extend the language in a way that feels native. The core language will be kept lean and minimal, but a library of "officially sanctioned" language extensions will be curated. For instance, the core Zeta language will only support functions with fixed arity and positional arguments. I would like, however, to implement variable arity functions, default values, optional and keyword arguments (as in Python) as a language extension.
