@@ -1,6 +1,8 @@
 The Zeta Programming Language
 =============================
 
+[![Build Status](https://travis-ci.org/maximecb/zeta.png)](https://travis-ci.org/maximecb)
+
 This is an implementation of a Virtual Machine (VM) for the Zeta programming
 language I'm working on in my spare time. Zeta draws inspiration from LISP,
 Smalltalk, ML, Python, JavaScript and C. The language is currently at the early
