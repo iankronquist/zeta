@@ -175,8 +175,12 @@ that the parser is greedy, and the lack of semicolons could make it slightly
 confusing to people. For instance:
 
 ```
-// this is a sequence of two expressions, x then y
+// shis is a sequence of two expressions, x then y
 x y
+
+// This is x+y and then z+w in a sequence
+x+y
+z+w
 
 // This is interpreted as a function call because of the
 // second set of parentheses
