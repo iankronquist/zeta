@@ -163,8 +163,8 @@ let obj2 = obj::{ y:6, z:7 }
 let arr = [0, 1, 2, obj, obj2]
 
 // Make the fib and foo functions available to other modules.
-export(fib, 'fib')
-export(foo, 'foo')
+export('fib', fib)
+export('foo', foo)
 ```
 
 Everything is still in flux. Your comments on the syntax and above
@@ -175,15 +175,15 @@ that the parser is greedy, and the lack of semicolons could make it slightly
 confusing to people. For instance:
 
 ```
-// shis is a sequence of two expressions, x then y
+// This is a sequence of two expressions, x then y
 x y
 
 // This is x+y and then z+w in a sequence
 x+y
 z+w
 
-// This is interpreted as a function call because of the
-// second set of parentheses
+// But! The following is interpreted as a function call because of
+// the second set of parentheses
 (x+y)
 (z+w) 
 ```
