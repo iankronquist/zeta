@@ -188,9 +188,11 @@ z+w
 (z+w) 
 ```
 
-We may or may not want to add an optional semicolon operator which only
-serves to terminate the parsing of an expression. I expect these issues
-will be easier to work out once we start writing more Zeta code.
+We may or may not want to use semicolons to separate expressions inside
+sequences (at the top-level of scripts and inside curly braces). The question
+would then be whether semicolons should be optional or mandatory. I expect
+such issues will be easier to work out once we start writing more Zeta code
+and dogfooding the system.
 
 ## Language Extensions
 
