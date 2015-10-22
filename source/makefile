@@ -8,11 +8,11 @@ else ifeq ($(OS),FreeBSD)
   CC=gcc5
 endif
 
-GCC_MAJ := $(shell expr `$(CC) -dumpversion | cut -d. -f1 | xargs printf '%02d'`)
-GCC_MIN := $(shell expr `$(CC) -dumpversion | cut -d. -f2 | xargs printf '%02d'`)
-GCC_4_9 := $(shell [ $(GCC_MAJ) -gt 4 -o \( $(GCC_MAJ) -eq 4 -a $(GCC_MIN) -ge 8 \) ] && echo true)
+GCC_MAJ := $(shell expr `$(CC) -dumpversion | cut -d. -f1`)
+GCC_MIN := $(shell expr `$(CC) -dumpversion | cut -d. -f2`)
+GCC_GE_4_9 := $(shell [ $(GCC_MAJ) -ge 5 -o \( $(GCC_MAJ) -eq 4 -a $(GCC_MIN) -ge 9 \) ] && echo yes)
 
-ifneq ($(GCC_4_9),true)
+ifneq ($(GCC_GE_4_9),yes)
 GCC_VER := $(shell expr `$(CC) -dumpversion`)
 $(error GCC version required is 4.9+ (your version $(GCC_VER)).)
 endif
@@ -34,10 +34,10 @@ test: debug
 
 #gcc -fsanitize=address -fsanitize=undefined -fno-sanitize-recover -fstack-protector
 debug: *.c
-	 $(CC) $(CFLAGS) -O0 -g -ftrapv -o zeta vm.c parser.c interp.c main.c
+	$(CC) $(CFLAGS) -O0 -g -ftrapv -o zeta vm.c parser.c interp.c main.c
 
 release: *.c
-	 $(CC) $(CFLAGS) -O4 -o zeta vm.c parser.c interp.c main.c
+	$(CC) $(CFLAGS) -O4 -o zeta vm.c parser.c interp.c main.c
 
 clean:
 	rm -f *.o
