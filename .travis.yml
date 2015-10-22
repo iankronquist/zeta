@@ -4,9 +4,7 @@ addons:
         packages:
             - gcc-5
 
-language: c
-compiler: gcc
-env: GCC_VERSION=5
+env: GCC_VERSION=5 CC=gcc-5 CXX=gcc-5
 
 # Run only on the master branch
 branches:
