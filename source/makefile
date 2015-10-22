@@ -5,7 +5,7 @@ CFLAGS_release=-O4
 
 OS := $(shell uname)
 ifeq ($(OS),Linux) 
-  CFLAGS_DEBUG+=-lmcheck
+  CFLAGS_debug+=-lmcheck
 else ifeq ($(OS),FreeBSD)
   CC=gcc5
 endif
