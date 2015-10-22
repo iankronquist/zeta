@@ -3,13 +3,13 @@ compiler: gcc
 
 # Package installation
 before_install:
-  - export CC="gcc-4.9";
+  - export CC="gcc-4.8";
 addons:
   apt:
     sources:
       - ubuntu-toolchain-r-test
     packages:
-      - gcc-4.9
+      - gcc-4.8
 
 # Run only on the master branch
 branches:
