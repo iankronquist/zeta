@@ -1,9 +1,11 @@
 CC?=gcc
 CFLAGS=-std=c11
+CFLAGS_debug=-O0 -g -ftrapv
+CFLAGS_release=-O4
 
 OS := $(shell uname)
 ifeq ($(OS),Linux) 
-  CFLAGS+=-lmcheck
+  CFLAGS_DEBUG+=-lmcheck
 else ifeq ($(OS),FreeBSD)
   CC=gcc5
 endif
@@ -34,10 +36,10 @@ test: debug
 
 #gcc -fsanitize=address -fsanitize=undefined -fno-sanitize-recover -fstack-protector
 debug: *.c
-	$(CC) $(CFLAGS) -O0 -g -ftrapv -o zeta vm.c parser.c interp.c main.c
+	$(CC) $(CFLAGS) $(CFLAGS_debug) -o zeta vm.c parser.c interp.c main.c
 
 release: *.c
-	$(CC) $(CFLAGS) -O4 -o zeta vm.c parser.c interp.c main.c
+	$(CC) $(CFLAGS) $(CFLAGS_release) -o zeta vm.c parser.c interp.c main.c
 
 clean:
 	rm -f *.o
