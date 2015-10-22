@@ -3,14 +3,13 @@ compiler: gcc
 
 # Package installation
 before_install:
-  - if [ "$CXX" = "g++" ]; then export CXX="g++-4.9" CC="gcc-4.9"; fi
+  - export CC="gcc-4.9";
 addons:
   apt:
     sources:
       - ubuntu-toolchain-r-test
     packages:
       - gcc-4.9
-      - g++-4.9
 
 # Run only on the master branch
 branches:
