@@ -19,7 +19,7 @@ design.
 
 Requirements:
 
-- A C compiler, GCC 4.9+ recommended (clang and others untested)
+- A C compiler, GCC 4.8+ recommended (clang and others untested)
 
 - GNU make
 
