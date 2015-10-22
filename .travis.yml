@@ -1,20 +1,21 @@
+language: c
+compiler: gcc
+
+# Package installation
+before_install:
+  - if [ "$CXX" = "g++" ]; then export CXX="g++-4.9" CC="gcc-4.9"; fi
+addons:
+  apt:
+    sources:
+      - ubuntu-toolchain-r-test
+    packages:
+      - gcc-4.9
+      - g++-4.9
+
 # Run only on the master branch
 branches:
     only:
         - master
-
-# Required packages
-addons:
-    apt:
-        packages:
-            - gcc-5
-
-language: c
-compiler: gcc
-env: GCC_VERSION=5 CC=gcc-5 CXX=gcc-5
-
-before_script:
-    - update-alternatives --set gcc /usr/bin/gcc-5
 
 # Build a test binary and run tests
 script: make -C source test
