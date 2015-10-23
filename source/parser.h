@@ -95,7 +95,7 @@ typedef struct
 /**
 Variable/constant declaration node
 */
-typedef struct
+typedef struct ast_decl
 {
     shapeidx_t shape;
 

@@ -51,6 +51,9 @@ typedef struct array array_t;
 typedef struct string string_t;
 typedef struct shape shape_t;
 typedef struct object object_t;
+typedef struct ast_decl ast_decl_t;
+typedef struct ast_fun ast_fun_t;
+typedef struct cell cell_t;
 typedef struct clos clos_t;
 
 /**
@@ -70,6 +73,11 @@ typedef union
     string_t* string;
     shape_t* shape;
     object_t* object;
+
+    ast_fun_t* fun;
+    ast_decl_t* decl;
+
+    cell_t* cell;
     clos_t* clos;
 
     shapeidx_t shapeidx;
@@ -233,6 +241,7 @@ typedef struct object
 } object_t;
 
 value_t value_from_heapptr(heapptr_t v, tag_t tag);
+value_t value_from_obj(heapptr_t v);
 value_t value_from_int64(int64_t v);
 void value_print(value_t value);
 bool value_equals(value_t this, value_t that);

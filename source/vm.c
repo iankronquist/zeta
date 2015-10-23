@@ -32,6 +32,14 @@ value_t value_from_heapptr(heapptr_t v, tag_t tag)
     return val; 
 }
 
+value_t value_from_obj(heapptr_t v)
+{
+    value_t val;
+    val.word.heapptr = v;
+    val.tag = TAG_OBJECT;
+    return val; 
+}
+
 value_t value_from_int64(int64_t v)
 {
     value_t val;

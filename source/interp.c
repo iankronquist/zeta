@@ -74,7 +74,7 @@ void find_decls(heapptr_t expr, ast_fun_t* fun)
         // If this variable is already declared, do nothing
         for (size_t i = 0; i < fun->local_decls->len; ++i)
         {
-            ast_decl_t* local = (ast_decl_t*)array_get_ptr(fun->local_decls, i);
+            ast_decl_t* local = array_get(fun->local_decls, i).word.decl;
             if (local->name == decl->name)
                 return;
         }
@@ -194,21 +194,21 @@ void var_res(heapptr_t expr, ast_fun_t* fun)
         ast_fun_t* cur;
         for (cur = fun; cur != NULL; cur = cur->parent)
         {
-            // For each local
+            // For each local declaration
             for (size_t i = 0; i < cur->local_decls->len; ++i)
             {
-                ast_decl_t* local = (ast_decl_t*)array_get_ptr(cur->local_decls, i);
+                ast_decl_t* decl = array_get(cur->local_decls, i).word.decl;
 
-                if (local->name != ref->name)
+                if (decl->name != ref->name)
                     continue;
 
                 // If the variable is from this scope
                 if (cur == fun)
                 {
-                    assert (local->idx < cur->local_decls->len);
+                    assert (decl->idx < cur->local_decls->len);
 
                     // Store the index of this local
-                    ref->idx = local->idx;
+                    ref->idx = decl->idx;
 
                     /*
                     printf("resolved local\n");
@@ -219,14 +219,16 @@ void var_res(heapptr_t expr, ast_fun_t* fun)
                     return;
                 }
 
-                // The variable is from an outer scope
-                // Mark the declaration as captured
-                local->capt = true;
 
-                // TODO;
-                // Assign the variable a captured mutable cell index
-                // Need to check if we've already captured it
-                assert (false);
+
+
+                // TODO: Need to check if we've already captured it
+                // Implement a recursive "add_capt_var" function?
+                //assert (false);
+
+
+                // Assign the reference a captured mutable cell index
+                ref->idx = fun->capt_vars->len;
 
                 // FIXME: only do this if we haven't already captured it
                 // Thread the local as a closure variable
@@ -236,9 +238,18 @@ void var_res(heapptr_t expr, ast_fun_t* fun)
                     array_set_obj(
                         clos->capt_vars, 
                         clos->capt_vars->len,
-                        (heapptr_t)local
+                        (heapptr_t)decl
                     );
                 }
+
+                // The variable is from an outer scope
+                // Mark the declaration as captured
+                decl->capt = true;
+
+
+
+
+
 
                 return;
             }
@@ -336,7 +347,7 @@ void var_res_pass(ast_fun_t* fun, ast_fun_t* parent)
     for (size_t i = 0; i < fun->param_decls->len; ++i)
     {
         value_t decl_val = array_get(fun->param_decls, i);
-        ast_decl_t* decl = (ast_decl_t*)decl_val.word.heapptr;
+        ast_decl_t* decl = decl_val.word.decl;
         decl->idx = fun->local_decls->len;
         array_set(fun->local_decls, i, decl_val);
     }
@@ -385,20 +396,19 @@ value_t eval_assign(
     {
         ast_decl_t* decl = (ast_decl_t*)lhs_expr;
 
-        // If this variable is captured by a closure
+        // If this a closure variable
         if (decl->capt)
         {
             // Closure variables are stored in mutable cells
-            // Pointers to the cells are stored on the stack
-
-
-
-            // TODO
-            assert (false);
+            // Pointers to the cells are found on the closure object
+            cell_t* cell = locals[decl->idx].word.cell;
+            cell->word = val.word;
+            cell->tag = val.tag;
 
             return val;
         }
 
+        // Assign to the stack frame slot directly
         locals[decl->idx] = val;
 
         return val;
@@ -409,21 +419,6 @@ value_t eval_assign(
     {
         ast_ref_t* ref = (ast_ref_t*)lhs_expr;
 
-        // If this a closure variable
-        if (ref->capt)
-        {
-            // Closure variables are stored in mutable cells
-            // Pointers to the cells are found on the closure object
-
-
-
-
-            // TODO
-            assert (false);
-
-            return val;
-        }
-
         // If this is a global variable
         if (ref->global)
         {
@@ -433,6 +428,7 @@ value_t eval_assign(
             return val;
         }
 
+        // Check that the ref index is valid
         ast_fun_t* fun = clos->fun;
         if (ref->idx > fun->local_decls->len)
         {
@@ -440,6 +436,19 @@ value_t eval_assign(
             exit(-1);
         }
 
+        // If this a closure variable
+        if (ref->capt)
+        {
+            // Closure variables are stored in mutable cells
+            // Pointers to the cells are found on the closure object
+            cell_t* cell = locals[ref->idx].word.cell;
+            cell->word = val.word;
+            cell->tag = val.tag;
+
+            return val;
+        }
+
+        // Assign to the stack frame slot directly
         locals[ref->idx] = val;
 
         return val;
@@ -715,7 +724,17 @@ value_t eval_str(const char* cstr, const char* src_name)
     // Allocate a closure object for the unit
     clos_t* unit_clos = clos_alloc(unit_fun);
 
-    // TODO: allocate the closure cells for the unit
+    // Allocate closure cells for the captured variables
+    for (size_t i = 0; i < unit_fun->local_decls->len; ++i)
+    {
+        ast_decl_t* decl = array_get(unit_fun->local_decls, i).word.decl;
+        if (decl->capt == true)
+        {
+            //printf("allocating cell\n");
+            assert (decl->idx < unit_fun->local_decls->len);
+            locals[decl->idx] = value_from_obj((heapptr_t)cell_alloc());
+        }
+    }
 
     // Evaluate the unit function body in the local frame
     return eval_expr(unit_fun->body_expr, unit_clos, locals);
@@ -818,6 +837,12 @@ void test_interp()
     test_eval_int("let f = fun () 7           f()", 7);
     test_eval_int("let f = fun (n) n          f(8)", 8);
     test_eval_int("let f = fun (a, b) a - b   f(7, 2)", 5);
+
+    // Variable captured by a closure but unread
+    test_eval_int("let x = 3    let f = fun () x    1", 1);
+    test_eval_int("let x = 3    let f = fun () x    x = 4", 4);
+
+
 
     // TODO: test closure variable capture
     //test_eval_int("(let a = 3) (let f = fun () a) f()", 3);
