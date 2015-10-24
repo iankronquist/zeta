@@ -84,8 +84,11 @@ typedef struct
     /// Global variable flag
     bool global;
 
-    /// Captured variable flag
-    bool capt;
+    /// Escaping/captured variable (stored in a mutable cell)
+    bool esc;
+
+    /// Local variable (from this function)
+    bool local;
 
     /// Identifier name string
     string_t* name;
@@ -105,8 +108,8 @@ typedef struct ast_decl
     /// Constant flag
     bool cst;
 
-    /// Captured variable flag
-    bool capt;
+    /// Escaping variable (captured by a nested function)
+    bool esc;
 
     /// Identifier name string
     string_t* name;
@@ -115,6 +118,7 @@ typedef struct ast_decl
 
 /**
 Operator information structure
+TODO: map this as a Zeta object also?
 */
 typedef struct
 {
@@ -241,17 +245,21 @@ typedef struct ast_fun
     /// Parent (outer) function
     struct ast_fun* parent;
 
-    /// List of parameter declarations
+    /// Ordered list of parameter declarations
     array_t* param_decls;
 
-    /// List of local variable declarations
+    /// Set of local variable declarations
     /// Note: this list also includes the parameters
     /// Note: Variables captured by nested functions have the capt flag set
     array_t* local_decls;
 
-    /// List of variables captured from outer functions
-    /// Note: these are stored in the closure object
-    array_t* capt_vars;
+    // Set of variables escaping into inner/nested functions
+    array_t* esc_vars;
+
+    /// Set of variables captured from outer/parent functions
+    /// Note: this does not include variables from the global object
+    /// Note: the value of these are stored in closure objects
+    array_t* free_vars;
 
     /// Function body expression
     heapptr_t body_expr;

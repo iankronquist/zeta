@@ -34,7 +34,7 @@ cell_t* cell_alloc()
 clos_t* clos_alloc(ast_fun_t* fun)
 {
     clos_t* clos = (clos_t*)vm_alloc(
-        sizeof(clos_t) + sizeof(cell_t*) * fun->capt_vars->len,
+        sizeof(clos_t) + sizeof(cell_t*) * fun->free_vars->len,
         SHAPE_STRING
     );
 
@@ -202,6 +202,9 @@ void var_res(heapptr_t expr, ast_fun_t* fun)
                 if (decl->name != ref->name)
                     continue;
 
+                // Mark the reference as escaping or not
+                ref->esc = decl->esc;
+
                 // If the variable is from this scope
                 if (cur == fun)
                 {
@@ -209,6 +212,9 @@ void var_res(heapptr_t expr, ast_fun_t* fun)
 
                     // Store the index of this local
                     ref->idx = decl->idx;
+
+                    // The variable is from this scope
+                    ref->local = true;
 
                     /*
                     printf("resolved local\n");
@@ -219,6 +225,11 @@ void var_res(heapptr_t expr, ast_fun_t* fun)
                     return;
                 }
 
+                // The variable is not from this scope                
+                ref->local = false;
+
+
+
 
 
 
@@ -228,7 +239,9 @@ void var_res(heapptr_t expr, ast_fun_t* fun)
 
 
                 // Assign the reference a captured mutable cell index
-                ref->idx = fun->capt_vars->len;
+                ref->idx = fun->free_vars->len;
+
+
 
                 // FIXME: only do this if we haven't already captured it
                 // Thread the local as a closure variable
@@ -236,16 +249,17 @@ void var_res(heapptr_t expr, ast_fun_t* fun)
                 for (clos = fun; clos != cur; clos = clos->parent)
                 {
                     array_set_obj(
-                        clos->capt_vars, 
-                        clos->capt_vars->len,
+                        clos->free_vars, 
+                        clos->free_vars->len,
                         (heapptr_t)decl
                     );
                 }
 
                 // The variable is from an outer scope
-                // Mark the declaration as captured
-                decl->capt = true;
+                // Mark the declaration as escaping
+                decl->esc = true;
 
+                // TODO: add to esc_vars set
 
 
 
@@ -396,15 +410,14 @@ value_t eval_assign(
     {
         ast_decl_t* decl = (ast_decl_t*)lhs_expr;
 
-        // If this a closure variable
-        if (decl->capt)
+        // If this an escaping variable
+        if (decl->esc)
         {
-            // Closure variables are stored in mutable cells
+            // Escaping variables are stored in mutable cells
             // Pointers to the cells are found on the closure object
             cell_t* cell = locals[decl->idx].word.cell;
             cell->word = val.word;
             cell->tag = val.tag;
-
             return val;
         }
 
@@ -436,15 +449,14 @@ value_t eval_assign(
             exit(-1);
         }
 
-        // If this a closure variable
-        if (ref->capt)
+        // If this an escaping variable (captured by a closure)
+        if (ref->esc)
         {
-            // Closure variables are stored in mutable cells
+            // Escaping variables are stored in mutable cells
             // Pointers to the cells are found on the closure object
             cell_t* cell = locals[ref->idx].word.cell;
             cell->word = val.word;
             cell->tag = val.tag;
-
             return val;
         }
 
@@ -477,16 +489,10 @@ value_t eval_expr(
     {
         ast_ref_t* ref = (ast_ref_t*)expr;
 
-        // If this is a captured (closure) variable
-        if (ref->capt)
-        {
-            // TODO
-            assert (false);
-        }
-
         // TODO: handle globals
         assert (!ref->global);
 
+        // Check that the reference was resolved
         ast_fun_t* fun = clos->fun;
         if (ref->idx > fun->local_decls->len)
         {
@@ -497,6 +503,28 @@ value_t eval_expr(
             exit(-1);
         }
 
+        // If this an escaping variable (captured by a closure)
+        if (ref->esc)
+        {
+            // Free variables are stored in mutable cells
+            // Pointers to the cells are found on the closure object
+            cell_t* cell = locals[ref->idx].word.cell;
+            value_t value;
+            value.word = cell->word;
+            value.tag = cell->tag;
+
+            //printf("read value from cell\n");
+
+            return value;
+        }
+
+        /*
+        printf("reading normal local\n");
+        string_print(ref->name);
+        printf("\n");
+        */
+
+        // Read directly from the stack frame
         return locals[ref->idx];
     }
 
@@ -724,11 +752,11 @@ value_t eval_str(const char* cstr, const char* src_name)
     // Allocate a closure object for the unit
     clos_t* unit_clos = clos_alloc(unit_fun);
 
-    // Allocate closure cells for the captured variables
+    // Allocate closure cells for the escaping variables
     for (size_t i = 0; i < unit_fun->local_decls->len; ++i)
     {
         ast_decl_t* decl = array_get(unit_fun->local_decls, i).word.decl;
-        if (decl->capt == true)
+        if (decl->esc == true)
         {
             //printf("allocating cell\n");
             assert (decl->idx < unit_fun->local_decls->len);
@@ -838,14 +866,18 @@ void test_interp()
     test_eval_int("let f = fun (n) n          f(8)", 8);
     test_eval_int("let f = fun (a, b) a - b   f(7, 2)", 5);
 
-    // Variable captured by a closure but unread
+    // Unit-level variable captured by a closure
     test_eval_int("let x = 3    let f = fun () x    1", 1);
     test_eval_int("let x = 3    let f = fun () x    x = 4", 4);
+    test_eval_int("let x = 3    let f = fun () x    x", 3);
+
+
 
 
 
     // TODO: test closure variable capture
     //test_eval_int("(let a = 3) (let f = fun () a) f()", 3);
+
 
 
 
