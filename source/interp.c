@@ -604,9 +604,9 @@ value_t eval_expr(
             return (i0 >= i1)? VAL_TRUE:VAL_FALSE;
 
         if (binop->op == &OP_EQ)
-            return (memcmp(&v0, &v1, sizeof(v0)) == 0)? VAL_TRUE:VAL_FALSE;
+            return value_equals(v0, v1)? VAL_TRUE:VAL_FALSE;
         if (binop->op == &OP_NE)
-            return (memcmp(&v0, &v1, sizeof(v0)) != 0)? VAL_TRUE:VAL_FALSE;
+            return value_equals(v0, v1)? VAL_FALSE:VAL_TRUE;
 
         printf("unimplemented binary operator: %s\n", binop->op->str);
         return VAL_FALSE;
