@@ -10,6 +10,7 @@ addons:
       - ubuntu-toolchain-r-test
     packages:
       - gcc-4.8
+      - valgrind
 
 # Run only on the master branch
 branches:
