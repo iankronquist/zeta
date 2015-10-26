@@ -430,7 +430,8 @@ heapptr_t parse_string(input_t* input, char endCh)
                 case '0': ch = '\0'; break;
 
                 default:
-                return NULL;
+                    free(buf);
+                    return NULL;
             }
         }
 
