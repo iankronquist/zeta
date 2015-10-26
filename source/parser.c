@@ -430,7 +430,8 @@ heapptr_t parse_string(input_t* input, char endCh)
                 case '0': ch = '\0'; break;
 
                 default:
-                return NULL;
+                    free(buf);
+                    return NULL;
             }
         }
 
@@ -449,7 +450,9 @@ heapptr_t parse_string(input_t* input, char endCh)
     buf[len] = '\0';
 
     // Get the interned version of this string
-    return (heapptr_t)vm_get_cstr(buf);
+    heapptr_t heap_val = vm_get_cstr(buf);
+    free(buf);
+    return heap_val;
 }
 
 /**

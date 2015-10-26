@@ -59,7 +59,6 @@ void find_decls(heapptr_t expr, ast_fun_t* fun)
     if (shape == SHAPE_ARRAY)
     {
         array_t* array_expr = (array_t*)expr;
-        array_t* val_array = array_alloc(array_expr->len);
         for (size_t i = 0; i < array_expr->len; ++i)
             find_decls(array_get(array_expr, i).word.heapptr, fun);
 
@@ -172,7 +171,6 @@ void var_res(heapptr_t expr, ast_fun_t* fun)
     if (shape == SHAPE_ARRAY)
     {
         array_t* array_expr = (array_t*)expr;
-        array_t* val_array = array_alloc(array_expr->len);
         for (size_t i = 0; i < array_expr->len; ++i)
             var_res(array_get(array_expr, i).word.heapptr, fun);
 

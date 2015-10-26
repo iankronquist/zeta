@@ -74,7 +74,7 @@ void value_print(value_t value)
         break;
 
         case TAG_INT64:
-        printf("%ld", value.word.int64);
+        printf("%lld", value.word.int64);
         break;
 
         case TAG_FLOAT64:
